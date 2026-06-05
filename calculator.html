@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Pricing Calculator</title>
+<style>
+  /* Scoped to .spc-widget so it won't collide with your site's styles */
+  .spc-widget {
+    --spc-accent: #2563eb;
+    --spc-accent-dark: #1d4ed8;
+    --spc-bg: #ffffff;
+    --spc-soft: #f3f4f6;
+    --spc-border: #e5e7eb;
+    --spc-text: #111827;
+    --spc-muted: #6b7280;
+    --spc-success: #059669;
+    box-sizing: border-box;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--spc-text);
+    background: var(--spc-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+  .spc-widget * { box-sizing: border-box; }
+
+  .spc-widget h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+  .spc-widget .spc-sub {
+    color: var(--spc-muted);
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+  }
+
+  .spc-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .spc-layout { grid-template-columns: 1fr; }
+    .spc-summary { position: static !important; }
+  }
+
+  .spc-group { margin-bottom: 22px; }
+  .spc-group-title {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--spc-muted);
+    font-weight: 700;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--spc-border);
+  }
+
+  .spc-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--spc-border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .spc-item:hover { border-color: var(--spc-accent); background: #f8faff; }
+  .spc-item.spc-checked {
+    border-color: var(--spc-accent);
+    background: #eff5ff;
+  }
+  .spc-item input { width: 18px; height: 18px; accent-color: var(--spc-accent); cursor: pointer; flex: none; }
+  .spc-item .spc-name { flex: 1; font-size: 0.92rem; }
+  .spc-item .spc-price { font-weight: 600; font-size: 0.92rem; white-space: nowrap; }
+
+  .spc-summary {
+    background: var(--spc-soft);
+    border-radius: 14px;
+    padding: 20px;
+    position: sticky;
+    top: 16px;
+  }
+  .spc-summary h2 { font-size: 1.05rem; margin: 0 0 14px; }
+  .spc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+  .spc-row .spc-label { color: var(--spc-muted); }
+  .spc-row.spc-discount .spc-label,
+  .spc-row.spc-discount .spc-val { color: var(--spc-success); font-weight: 600; }
+
+  .spc-divider { height: 1px; background: var(--spc-border); margin: 14px 0; }
+
+  .spc-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .spc-total .spc-label { font-weight: 700; font-size: 1rem; }
+  .spc-total .spc-val { font-weight: 800; font-size: 1.6rem; color: var(--spc-accent-dark); }
+  .spc-permonth { font-size: 0.75rem; color: var(--spc-muted); font-weight: 500; }
+
+  .spc-badge {
+    display: inline-block;
+    background: var(--spc-success);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 4px;
+  }
+  .spc-next-tier {
+    font-size: 0.78rem;
+    color: var(--spc-muted);
+    margin-top: 12px;
+    line-height: 1.4;
+  }
+  .spc-empty { font-size: 0.85rem; color: var(--spc-muted); }
+
+  .spc-reset {
+    margin-top: 16px;
+    width: 100%;
+    background: none;
+    border: 1px solid var(--spc-border);
+    color: var(--spc-muted);
+    padding: 9px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background .15s;
+  }
+  .spc-reset:hover { background: #fff; }
+  .spc-cta {
+    margin-top: 10px;
+    width: 100%;
+    background: var(--spc-accent);
+    border: none;
+    color: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background .15s;
+  }
+  .spc-cta:hover { background: var(--spc-accent-dark); }
+</style>
+</head>
+<body>
+
+<!-- ============ EMBED FROM HERE ============ -->
+<div class="spc-widget" id="spcWidget">
+  <h1>Build Your Plan</h1>
+  <p class="spc-sub">Select the services you need. Bundle discounts apply automatically.</p>
+
+  <div class="spc-layout">
+    <div class="spc-services" id="spcServices"><!-- services injected by JS --></div>
+
+    <aside class="spc-summary">
+      <h2>Your Estimate</h2>
+      <div id="spcLines">
+        <p class="spc-empty">No services selected yet.</p>
+      </div>
+      <div class="spc-divider"></div>
+      <div class="spc-total">
+        <span class="spc-label">Total</span>
+        <span class="spc-val" id="spcTotal">$0</span>
+      </div>
+      <div class="spc-permonth">per month</div>
+      <div id="spcTier"></div>
+      <button class="spc-cta" id="spcCta" type="button">Get Started</button>
+      <button class="spc-reset" id="spcReset" type="button">Clear selection</button>
+    </aside>
+  </div>
+</div>
+<!-- ============ EMBED TO HERE ============ -->
+
+<script>
+(function () {
+  // ---- Configuration -------------------------------------------------
+  var SERVICES = [
+    { group: "Paid Search", items: [
+      { name: "Google Ads (Paid Search)", price: 750 },
+      { name: "Microsoft Advertising / Bing Ads (Paid Search)", price: 750 }
+    ]},
+    { group: "Paid Social", items: [
+      { name: "Meta – Facebook & Instagram (Paid Social)", price: 750 },
+      { name: "LinkedIn Ads (Professional Social)", price: 750 },
+      { name: "Pinterest Ads (Visual Discovery)", price: 750 },
+      { name: "Reddit Ads (Niche Social & Community)", price: 750 },
+      { name: "Snapchat Ads (AR & Gen Z)", price: 750 },
+      { name: "TikTok Ads (Short-Form Content)", price: 750 },
+      { name: "X / Twitter Ads (Real-Time Engagement)", price: 750 }
+    ]},
+    { group: "Video & Audio", items: [
+      { name: "YouTube Ads (Video)", price: 750 },
+      { name: "Connected TV / CTV via StackAdapt (Programmatic)", price: 750 },
+      { name: "Video Pre-Roll via StackAdapt (Programmatic)", price: 750 },
+      { name: "Digital Audio – Podcasts, Spotify, Pandora via StackAdapt", price: 750 }
+    ]},
+    { group: "Programmatic", items: [
+      { name: "Display via StackAdapt (Programmatic)", price: 750 },
+      { name: "Digital Out-Of-Home / DOOH via StackAdapt", price: 750 }
+    ]},
+    { group: "Emerging & AI", items: [
+      { name: "AI Search & Conversational – OpenAI/ChatGPT & Perplexity", price: 750 }
+    ]},
+    { group: "SEO", items: [
+      { name: "SEO Premium", price: 1699 },
+      { name: "SEO Ultimate", price: 2299 },
+      { name: "SEO Enterprise", price: 2799 }
+    ]},
+    { group: "Website", items: [
+      { name: "Website Maintenance", price: 350 }
+    ]}
+  ];
+
+  // Discount tiers by number of selected services (highest threshold first)
+  var TIERS = [
+    { min: 4, rate: 0.20, label: "4+ services" },
+    { min: 3, rate: 0.15, label: "3 services" },
+    { min: 2, rate: 0.10, label: "2 services" }
+  ];
+
+  // ---- Build the UI --------------------------------------------------
+  var fmt = function (n) {
+    return "$" + Math.round(n).toLocaleString("en-US");
+  };
+
+  var container = document.getElementById("spcServices");
+  var selected = {}; // name -> price
+
+  SERVICES.forEach(function (grp, gi) {
+    var wrap = document.createElement("div");
+    wrap.className = "spc-group";
+    var title = document.createElement("div");
+    title.className = "spc-group-title";
+    title.textContent = grp.group;
+    wrap.appendChild(title);
+
+    grp.items.forEach(function (item, ii) {
+      var id = "spc-" + gi + "-" + ii;
+      var label = document.createElement("label");
+      label.className = "spc-item";
+      label.setAttribute("for", id);
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = id;
+      cb.dataset.price = item.price;
+      cb.dataset.name = item.name;
+
+      var name = document.createElement("span");
+      name.className = "spc-name";
+      name.textContent = item.name;
+
+      var price = document.createElement("span");
+      price.className = "spc-price";
+      price.textContent = fmt(item.price);
+
+      cb.addEventListener("change", function () {
+        if (cb.checked) {
+          selected[item.name] = item.price;
+          label.classList.add("spc-checked");
+        } else {
+          delete selected[item.name];
+          label.classList.remove("spc-checked");
+        }
+        render();
+      });
+
+      label.appendChild(cb);
+      label.appendChild(name);
+      label.appendChild(price);
+      wrap.appendChild(label);
+    });
+
+    container.appendChild(wrap);
+  });
+
+  // ---- Pricing logic -------------------------------------------------
+  function currentTier(count) {
+    for (var i = 0; i < TIERS.length; i++) {
+      if (count >= TIERS[i].min) return TIERS[i];
+    }
+    return null;
+  }
+
+  function render() {
+    var names = Object.keys(selected);
+    var count = names.length;
+    var subtotal = names.reduce(function (s, n) { return s + selected[n]; }, 0);
+
+    var tier = currentTier(count);
+    var rate = tier ? tier.rate : 0;
+    var discount = subtotal * rate;
+    var total = subtotal - discount;
+
+    // Line items
+    var linesEl = document.getElementById("spcLines");
+    if (count === 0) {
+      linesEl.innerHTML = '<p class="spc-empty">No services selected yet.</p>';
+    } else {
+      var html = "";
+      names.forEach(function (n) {
+        html += '<div class="spc-row"><span class="spc-label">' +
+                escapeHtml(n) + '</span><span class="spc-val">' +
+                fmt(selected[n]) + '</span></div>';
+      });
+      html += '<div class="spc-divider"></div>';
+      html += '<div class="spc-row"><span class="spc-label">Subtotal (' + count +
+              ' service' + (count > 1 ? 's' : '') + ')</span><span class="spc-val">' +
+              fmt(subtotal) + '</span></div>';
+      if (rate > 0) {
+        html += '<div class="spc-row spc-discount"><span class="spc-label">Bundle discount (' +
+                (rate * 100) + '%)</span><span class="spc-val">−' + fmt(discount) +
+                '</span></div>';
+      }
+      linesEl.innerHTML = html;
+    }
+
+    document.getElementById("spcTotal").textContent = fmt(total);
+
+    // Tier badge / next-tier hint
+    var tierEl = document.getElementById("spcTier");
+    var msg = "";
+    if (rate > 0) {
+      msg += '<span class="spc-badge">' + (rate * 100) + '% bundle discount applied</span>';
+    }
+    // Find the next better tier to nudge toward
+    var next = null;
+    for (var i = TIERS.length - 1; i >= 0; i--) {
+      if (TIERS[i].min > count) { next = TIERS[i]; break; }
+    }
+    if (next) {
+      var need = next.min - count;
+      msg += '<div class="spc-next-tier">Add ' + need + ' more service' +
+             (need > 1 ? 's' : '') + ' to unlock <strong>' + (next.rate * 100) +
+             '% off</strong>.</div>';
+    }
+    tierEl.innerHTML = msg;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ---- Buttons -------------------------------------------------------
+  document.getElementById("spcReset").addEventListener("click", function () {
+    selected = {};
+    var boxes = container.querySelectorAll('input[type="checkbox"]');
+    for (var i = 0; i < boxes.length; i++) {
+      boxes[i].checked = false;
+      boxes[i].closest(".spc-item").classList.remove("spc-checked");
+    }
+    render();
+  });
+
+  document.getElementById("spcCta").addEventListener("click", function () {
+    var names = Object.keys(selected);
+    if (names.length === 0) {
+      alert("Please select at least one service to get started.");
+      return;
+    }
+    // TODO: replace with your own action (form redirect, contact page, etc.)
+    var count = names.length;
+    var subtotal = names.reduce(function (s, n) { return s + selected[n]; }, 0);
+    var tier = currentTier(count);
+    var rate = tier ? tier.rate : 0;
+    var total = subtotal - subtotal * rate;
+    alert("Selected " + count + " service(s).\nMonthly total: " + fmt(total) +
+          "\n\nHook this button up to your contact form or checkout.");
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
