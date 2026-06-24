@@ -27,21 +27,6 @@
   }
   .cpm-widget * { box-sizing: border-box; }
 
-  /* ---- Brand header ---- */
-  .cpm-brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--cpm-border);
-  }
-  .cpm-brand .cpm-logo {
-    height: 54px;
-    width: auto;
-    display: block;
-  }
-
   .cpm-widget h1 {
     font-size: 1.5rem;
     margin: 0 0 4px;
@@ -245,33 +230,6 @@
 
 <!-- ============ EMBED FROM HERE ============ -->
 <div class="cpm-widget" id="cpmWidget">
-  <div class="cpm-brand">
-    <!-- Envision Marketing logo (inline SVG recreation — swap for official asset if desired) -->
-    <svg class="cpm-logo" viewBox="0 0 800 210" role="img" aria-label="Envision Marketing" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="envBlue" x1="0" y1="0" x2="0.15" y2="1">
-          <stop offset="0" stop-color="#6cc6f0"/>
-          <stop offset="1" stop-color="#1c75bc"/>
-        </linearGradient>
-      </defs>
-      <!-- Icon: three separated slanted two-tone bars in a descending staircase -->
-      <g transform="translate(60,0)">
-        <polygon points="0,62 11,62 49,0 38,0" fill="url(#envBlue)"/>
-        <polygon points="11,62 22,62 60,0 49,0" fill="#0a0e14"/>
-      </g>
-      <g transform="translate(30,70)">
-        <polygon points="0,62 11,62 49,0 38,0" fill="url(#envBlue)"/>
-        <polygon points="11,62 22,62 60,0 49,0" fill="#0a0e14"/>
-      </g>
-      <g transform="translate(0,140)">
-        <polygon points="0,62 11,62 49,0 38,0" fill="url(#envBlue)"/>
-        <polygon points="11,62 22,62 60,0 49,0" fill="#0a0e14"/>
-      </g>
-      <!-- Wordmark -->
-      <text x="184" y="112" font-family="Arial, Helvetica, sans-serif" font-size="98" font-weight="600" letter-spacing="1" fill="#111827">ENVISION</text>
-      <text x="186" y="171" font-family="Arial, Helvetica, sans-serif" font-size="41" font-weight="400" letter-spacing="27" fill="#1c75bc">MARKETING</text>
-    </svg>
-  </div>
   <h1>CPM Calculator</h1>
   <p class="cpm-sub">Enter any two values and we'll calculate the third. CPM = cost per 1,000 ad impressions.</p>
 
