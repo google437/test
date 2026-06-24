@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPM Calculator</title>
+<style>
+  /* Scoped to .cpm-widget so it won't collide with your site's styles */
+  .cpm-widget {
+    --cpm-accent: #2563eb;
+    --cpm-accent-dark: #1d4ed8;
+    --cpm-bg: #ffffff;
+    --cpm-soft: #f3f4f6;
+    --cpm-border: #e5e7eb;
+    --cpm-text: #111827;
+    --cpm-muted: #6b7280;
+    --cpm-success: #059669;
+    box-sizing: border-box;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--cpm-text);
+    background: var(--cpm-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+  .cpm-widget * { box-sizing: border-box; }
+
+  .cpm-widget h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+  .cpm-widget .cpm-sub {
+    color: var(--cpm-muted);
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+  }
+
+  .cpm-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .cpm-layout { grid-template-columns: 1fr; }
+    .cpm-summary { position: static !important; }
+  }
+
+  /* ---- Inputs ---- */
+  .cpm-fields { margin: 0; }
+
+  .cpm-field { margin-bottom: 18px; }
+  .cpm-field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .cpm-field .cpm-hint {
+    font-size: 0.78rem;
+    color: var(--cpm-muted);
+    font-weight: 400;
+  }
+  .cpm-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .cpm-input-wrap .cpm-prefix,
+  .cpm-input-wrap .cpm-suffix {
+    position: absolute;
+    color: var(--cpm-muted);
+    font-size: 0.95rem;
+    pointer-events: none;
+  }
+  .cpm-input-wrap .cpm-prefix { left: 12px; }
+  .cpm-input-wrap .cpm-suffix { right: 12px; }
+  .cpm-field input[type="number"] {
+    width: 100%;
+    padding: 11px 12px;
+    font-size: 1rem;
+    border: 1px solid var(--cpm-border);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -moz-appearance: textfield;
+  }
+  .cpm-field input.has-prefix { padding-left: 26px; }
+  .cpm-field input.has-suffix { padding-right: 44px; }
+  .cpm-field input:focus {
+    border-color: var(--cpm-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+  .cpm-field input.cpm-solved {
+    background: #eff5ff;
+    border-color: var(--cpm-accent);
+    font-weight: 700;
+    color: var(--cpm-accent-dark);
+  }
+  .cpm-field input::-webkit-outer-spin-button,
+  .cpm-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* ---- "Solve for" toggle ---- */
+  .cpm-solvefor {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .cpm-solvefor span {
+    align-self: center;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cpm-muted);
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .cpm-chip {
+    border: 1px solid var(--cpm-border);
+    background: #fff;
+    color: var(--cpm-text);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .cpm-chip:hover { border-color: var(--cpm-accent); }
+  .cpm-chip.cpm-active {
+    background: var(--cpm-accent);
+    border-color: var(--cpm-accent);
+    color: #fff;
+  }
+
+  /* ---- Summary card ---- */
+  .cpm-summary {
+    background: var(--cpm-soft);
+    border-radius: 14px;
+    padding: 20px;
+    position: sticky;
+    top: 16px;
+  }
+  .cpm-summary h2 { font-size: 1.05rem; margin: 0 0 14px; }
+  .cpm-result-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cpm-muted);
+    font-weight: 700;
+  }
+  .cpm-result-val {
+    font-weight: 800;
+    font-size: 2rem;
+    color: var(--cpm-accent-dark);
+    line-height: 1.1;
+    margin: 4px 0 2px;
+    word-break: break-word;
+  }
+  .cpm-result-unit { font-size: 0.8rem; color: var(--cpm-muted); }
+
+  .cpm-divider { height: 1px; background: var(--cpm-border); margin: 16px 0; }
+
+  .cpm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.88rem;
+    margin-bottom: 8px;
+  }
+  .cpm-row .cpm-label { color: var(--cpm-muted); }
+  .cpm-row .cpm-val { font-weight: 600; }
+
+  .cpm-formula {
+    font-size: 0.78rem;
+    color: var(--cpm-muted);
+    margin-top: 12px;
+    line-height: 1.5;
+    background: #fff;
+    border: 1px solid var(--cpm-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .cpm-formula code { color: var(--cpm-accent-dark); font-weight: 600; }
+  .cpm-empty { font-size: 0.85rem; color: var(--cpm-muted); }
+
+  .cpm-reset {
+    margin-top: 16px;
+    width: 100%;
+    background: none;
+    border: 1px solid var(--cpm-border);
+    color: var(--cpm-muted);
+    padding: 9px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background .15s;
+  }
+  .cpm-reset:hover { background: #fff; }
+
+  /* ---- Explainer ---- */
+  .cpm-explainer {
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid var(--cpm-border);
+  }
+  .cpm-explainer h3 { font-size: 1.05rem; margin: 0 0 8px; }
+  .cpm-explainer h4 { font-size: 0.92rem; margin: 18px 0 6px; }
+  .cpm-explainer p,
+  .cpm-explainer li {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #374151;
+  }
+  .cpm-explainer ul { margin: 6px 0; padding-left: 20px; }
+  .cpm-eq {
+    background: var(--cpm-soft);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.9rem;
+    margin: 8px 0;
+  }
+  .cpm-eq code { color: var(--cpm-accent-dark); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ============ EMBED FROM HERE ============ -->
+<div class="cpm-widget" id="cpmWidget">
+  <h1>CPM Calculator</h1>
+  <p class="cpm-sub">Enter any two values and we'll calculate the third. CPM = cost per 1,000 ad impressions.</p>
+
+  <div class="cpm-solvefor" id="cpmSolveFor">
+    <span>Solve for</span>
+    <button type="button" class="cpm-chip" data-solve="cost">Campaign Cost</button>
+    <button type="button" class="cpm-chip cpm-active" data-solve="cpm">CPM</button>
+    <button type="button" class="cpm-chip" data-solve="impressions">Impressions</button>
+  </div>
+
+  <div class="cpm-layout">
+    <div class="cpm-fields">
+      <div class="cpm-field" data-field="cost">
+        <label for="cpmCost">Campaign Cost <span class="cpm-hint">— total ad spend / budget</span></label>
+        <div class="cpm-input-wrap">
+          <span class="cpm-prefix">$</span>
+          <input type="number" id="cpmCost" class="has-prefix" min="0" step="any" placeholder="0.00" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="cpm-field" data-field="impressions">
+        <label for="cpmImpressions">Impressions <span class="cpm-hint">— number of ad views</span></label>
+        <div class="cpm-input-wrap">
+          <input type="number" id="cpmImpressions" min="0" step="any" placeholder="0" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="cpm-field" data-field="cpm">
+        <label for="cpmRate">CPM <span class="cpm-hint">— cost per 1,000 impressions</span></label>
+        <div class="cpm-input-wrap">
+          <span class="cpm-prefix">$</span>
+          <input type="number" id="cpmRate" class="has-prefix" min="0" step="any" placeholder="0.00" inputmode="decimal">
+        </div>
+      </div>
+    </div>
+
+    <aside class="cpm-summary">
+      <h2>Result</h2>
+      <div class="cpm-result-label" id="cpmResLabel">CPM</div>
+      <div class="cpm-result-val" id="cpmResVal">—</div>
+      <div class="cpm-result-unit" id="cpmResUnit">per 1,000 impressions</div>
+
+      <div class="cpm-divider"></div>
+
+      <div id="cpmBreakdown">
+        <p class="cpm-empty">Fill in the other two fields to see a result.</p>
+      </div>
+
+      <div class="cpm-formula" id="cpmFormula"></div>
+
+      <button class="cpm-reset" id="cpmReset" type="button">Clear</button>
+    </aside>
+  </div>
+
+  <div class="cpm-explainer">
+    <h3>What is CPM?</h3>
+    <p>
+      <strong>CPM</strong> stands for <strong>cost per mille</strong> — Latin for "cost per thousand." It is the
+      price an advertiser pays for every 1,000 impressions (views) of an ad. CPM is the most common pricing
+      model for awareness and reach-focused campaigns across display, social, video, and programmatic advertising.
+    </p>
+
+    <h4>The formulas</h4>
+    <div class="cpm-eq"><code>CPM = (Campaign Cost ÷ Impressions) × 1,000</code></div>
+    <div class="cpm-eq"><code>Campaign Cost = (CPM × Impressions) ÷ 1,000</code></div>
+    <div class="cpm-eq"><code>Impressions = (Campaign Cost ÷ CPM) × 1,000</code></div>
+
+    <h4>How to use this calculator</h4>
+    <ul>
+      <li>Pick what you want to <strong>solve for</strong> using the toggle at the top.</li>
+      <li>Enter the other two known values.</li>
+      <li>The answer updates instantly in the result card.</li>
+    </ul>
+
+    <h4>Example</h4>
+    <p>
+      If you spend <strong>$2,000</strong> on a campaign that delivers <strong>500,000 impressions</strong>,
+      your CPM is <code>(2,000 ÷ 500,000) × 1,000 = $4.00</code>. In other words, you pay $4 for every
+      thousand times your ad is shown.
+    </p>
+  </div>
+</div>
+<!-- ============ EMBED TO HERE ============ -->
+
+<script>
+(function () {
+  var solveFor = "cpm"; // "cost" | "cpm" | "impressions"
+
+  var costEl   = document.getElementById("cpmCost");
+  var imprEl   = document.getElementById("cpmImpressions");
+  var cpmEl    = document.getElementById("cpmRate");
+
+  var resLabel = document.getElementById("cpmResLabel");
+  var resVal   = document.getElementById("cpmResVal");
+  var resUnit  = document.getElementById("cpmResUnit");
+  var breakdown = document.getElementById("cpmBreakdown");
+  var formulaEl = document.getElementById("cpmFormula");
+
+  var META = {
+    cost:        { label: "Campaign Cost", unit: "total ad spend",          field: "cost" },
+    cpm:         { label: "CPM",           unit: "per 1,000 impressions",   field: "cpm" },
+    impressions: { label: "Impressions",   unit: "total ad views",          field: "impressions" }
+  };
+
+  // ---- Formatting helpers -------------------------------------------
+  function fmtMoney(n) {
+    return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtInt(n) {
+    return Math.round(n).toLocaleString("en-US");
+  }
+  function parse(el) {
+    var v = parseFloat(el.value);
+    return (isFinite(v) && v >= 0) ? v : null;
+  }
+
+  // ---- Solve-for toggle ---------------------------------------------
+  var chips = document.querySelectorAll("#cpmSolveFor .cpm-chip");
+  chips.forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      solveFor = chip.dataset.solve;
+      chips.forEach(function (c) { c.classList.toggle("cpm-active", c === chip); });
+      updateSolvedState();
+      render();
+    });
+  });
+
+  // The field being solved for is read-only (computed, not entered).
+  function updateSolvedState() {
+    [["cost", costEl], ["cpm", cpmEl], ["impressions", imprEl]].forEach(function (pair) {
+      var key = pair[0], el = pair[1];
+      var isTarget = (key === solveFor);
+      el.readOnly = isTarget;
+      el.classList.toggle("cpm-solved", false); // reset; render() re-applies when value present
+      if (isTarget) { el.value = ""; el.placeholder = "auto"; }
+      else {
+        el.placeholder = (key === "impressions") ? "0" : "0.00";
+      }
+    });
+  }
+
+  // ---- Core render ---------------------------------------------------
+  function render() {
+    var cost = parse(costEl);
+    var impr = parse(imprEl);
+    var cpm  = parse(cpmEl);
+
+    var meta = META[solveFor];
+    resLabel.textContent = meta.label;
+    resUnit.textContent = meta.unit;
+
+    var result = null;       // computed numeric value
+    var ready = false;       // are both inputs present & valid?
+    var formula = "";
+
+    if (solveFor === "cpm") {
+      ready = (cost !== null && impr !== null);
+      if (ready && impr > 0) {
+        result = (cost / impr) * 1000;
+        formula = "<code>($" + fmtNum(cost) + " ÷ " + fmtInt(impr) + ") × 1,000</code>";
+      }
+    } else if (solveFor === "cost") {
+      ready = (cpm !== null && impr !== null);
+      if (ready) {
+        result = (cpm * impr) / 1000;
+        formula = "<code>($" + fmtNum(cpm) + " × " + fmtInt(impr) + ") ÷ 1,000</code>";
+      }
+    } else { // impressions
+      ready = (cost !== null && cpm !== null);
+      if (ready && cpm > 0) {
+        result = (cost / cpm) * 1000;
+        formula = "<code>($" + fmtNum(cost) + " ÷ $" + fmtNum(cpm) + ") × 1,000</code>";
+      }
+    }
+
+    // Write the computed value back into its input (read-only field).
+    var targetEl = solveFor === "cost" ? costEl : (solveFor === "cpm" ? cpmEl : imprEl);
+
+    if (result !== null && isFinite(result)) {
+      // Result card
+      if (solveFor === "impressions") {
+        resVal.textContent = fmtInt(result);
+        targetEl.value = Math.round(result);
+      } else {
+        resVal.textContent = fmtMoney(result);
+        targetEl.value = result.toFixed(2);
+      }
+      targetEl.classList.add("cpm-solved");
+
+      // Breakdown
+      breakdown.innerHTML =
+        row("Campaign Cost", solveFor === "cost" ? fmtMoney(result) : fmtMoney(cost)) +
+        row("Impressions",   solveFor === "impressions" ? fmtInt(result) : fmtInt(impr)) +
+        row("CPM",           solveFor === "cpm" ? fmtMoney(result) : fmtMoney(cpm));
+
+      formulaEl.innerHTML = meta.label + " = " + formula;
+    } else {
+      resVal.textContent = "—";
+      targetEl.value = "";
+      targetEl.classList.remove("cpm-solved");
+      breakdown.innerHTML = '<p class="cpm-empty">Fill in the other two fields to see a result.</p>';
+      if (ready) {
+        // both filled but division by zero
+        formulaEl.innerHTML = '<span style="color:#b91c1c">Impressions and CPM must be greater than zero.</span>';
+      } else {
+        formulaEl.innerHTML = "";
+      }
+    }
+  }
+
+  function fmtNum(n) {
+    return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  }
+
+  function row(label, val) {
+    return '<div class="cpm-row"><span class="cpm-label">' + label +
+           '</span><span class="cpm-val">' + val + '</span></div>';
+  }
+
+  // ---- Events --------------------------------------------------------
+  [costEl, imprEl, cpmEl].forEach(function (el) {
+    el.addEventListener("input", render);
+  });
+
+  document.getElementById("cpmReset").addEventListener("click", function () {
+    costEl.value = imprEl.value = cpmEl.value = "";
+    render();
+  });
+
+  // ---- Init ----------------------------------------------------------
+  updateSolvedState();
+  render();
+})();
+</script>
+
+</body>
+</html>
