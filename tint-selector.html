@@ -94,6 +94,22 @@
   .tsel-legend { font-size:.74rem; color:var(--tsel-muted); line-height:1.5; margin-top:16px; }
   .tsel-legend b { color: var(--tsel-text); }
   .tsel-foot { text-align:center; font-size:.72rem; color:var(--tsel-muted); margin-top:12px; }
+
+  /* ---- Alignment editor (only visible with ?align=1) ---- */
+  .tsel-align { position:fixed; top:12px; right:12px; width:300px; z-index:9999;
+    background:#0e1116; color:#e8ecf1; border-radius:12px; padding:14px; font-size:.8rem;
+    box-shadow:0 10px 40px rgba(0,0,0,.4); }
+  .tsel-align h3 { margin:0 0 8px; font-size:.95rem; }
+  .tsel-align .zbtns { display:flex; gap:6px; margin:8px 0; }
+  .tsel-align .zbtns button { flex:1; padding:6px 4px; border-radius:7px; border:1px solid #333a44;
+    background:#171b22; color:#cbd2da; cursor:pointer; font-weight:600; }
+  .tsel-align .zbtns button.on { background:var(--tsel-accent); border-color:var(--tsel-accent); color:#fff; }
+  .tsel-align .abtns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .tsel-align .abtns button { padding:6px 8px; border-radius:7px; border:1px solid #333a44;
+    background:#171b22; color:#cbd2da; cursor:pointer; }
+  .tsel-align textarea { width:100%; height:150px; background:#05070a; color:#9fe8b0; border:1px solid #333a44;
+    border-radius:7px; font-family:monospace; font-size:.72rem; padding:8px; }
+  .tsel-align p { margin:6px 0; color:#9aa4b1; line-height:1.4; }
 </style>
 </head>
 <body>
@@ -160,8 +176,8 @@
 
   /* =========================================================================
      1) BRANDING — override from the embed URL, e.g.
-        tint-selector.html?shop=Cutting%20Edge%20Tint&phone=555-123-4567
-          &accent=%23f4511e&cta=Book%20Now&url=https://yoursite.com/contact
+        tint-selector.html?shop=Tru%20Tints&phone=555-123-4567
+          &accent=%23f4511e&cta=Book%20Now&url=https://tru-tints.com/contact
      ========================================================================= */
   var params = new URLSearchParams(window.location.search);
   var CONFIG = {
@@ -189,31 +205,40 @@
   if (CONFIG.footer) document.getElementById("tselFoot").textContent = CONFIG.footer;
 
   /* =========================================================================
-     2) TINT LEVELS shown as pills (matches the classic 70/50/35/20/05 set)
+     2) TINT LEVELS shown as pills (classic 70/50/35/20/05 set)
      ========================================================================= */
   var LEVELS = [70, 50, 35, 20, 5]; // VLT %
 
   /* =========================================================================
      3) VEHICLES  ← EDIT THIS LIST FOR EACH CLIENT
-        Two ways to define a vehicle:
 
-        A) PHOTO (looks best — like the reference site). Provide an image plus
-           the window regions as polygons in the image's own coordinate space:
-             {
-               name: "Tesla Model S",
-               viewBox: "0 0 1600 900",           // = image width/height
-               image: "https://cdn.site.com/tesla.png",  // or a data: URI
-               zones: {
-                 front:      [[[x,y],[x,y],...]],  // one or more polygons
-                 rear:       [[[x,y],...]],
-                 windshield: [[[x,y],...]]
-               }
-             }
-           (Send me any car photo and I'll map these polygon points for you.)
+        PHOTO vehicles (looks best): give an image + the window regions as
+        polygons in the image's own coordinate space. viewBox MUST match the
+        image's aspect ratio (width height). Send a car photo and use
+        ?align=1 in the browser to drag the window outlines into place — it
+        prints the exact "zones" object to paste back here.
 
-        B) BUILT-IN ART (used below so the tool works out of the box with no
-           images). "art" is inline SVG whose glass shapes carry data-zone.
+        Each zone is an array of polygons; each polygon is an array of [x,y]
+        points. front = front side glass, rear = rear side + back glass,
+        windshield = the windshield.
      ========================================================================= */
+  var VEHICLES = [
+    {
+      name: "Tesla Model 3",
+      // Aspect ratio of the source photo (looks ~4:3). Adjust if yours differs.
+      viewBox: "0 0 1000 750",
+      image: "https://tru-tints.com/wp-content/uploads/2025/09/IMG_3932.webp",
+      // Starting estimates — refine with ?align=1 so they hug the real glass.
+      zones: {
+        front:      [ [[300,300],[470,285],[478,400],[300,410]] ],
+        rear:       [ [[486,285],[660,285],[700,320],[720,400],[486,400]] ],
+        windshield: [ [[250,320],[300,232],[300,300],[255,360]] ]
+      }
+    }
+  ];
+
+  /* Built-in illustrated vehicles (kept as fallback / extra options). Remove
+     if you only want real photos. */
   function wheels(x1, x2) {
     return '<g fill="#1a1d22"><circle cx="'+x1+'" cy="388" r="66"/><circle cx="'+x2+'" cy="388" r="66"/></g>'
          + '<g fill="#3a3f47"><circle cx="'+x1+'" cy="388" r="40"/><circle cx="'+x2+'" cy="388" r="40"/></g>'
@@ -230,8 +255,7 @@
          + wheels.apply(null, glass.wheels) + glass.shapes
     };
   }
-
-  var VEHICLES = [
+  VEHICLES.push(
     artVehicle("Sedan", "#b5202b",
       "M64,372 L64,320 Q70,300 92,296 L252,270 Q300,264 330,236 L392,152 Q400,142 418,140 L676,140 "+
       "Q702,142 714,160 L806,252 L940,268 Q968,272 972,302 L974,372 Q974,392 954,392 L84,392 Q64,392 64,372 Z",
@@ -257,21 +281,14 @@
         '<rect x="588" y="150" width="392" height="150" rx="6" fill="#00000018"/>'+
         '<path class="tsel-glass" data-zone="windshield" d="M312,224 L364,154 L430,154 L430,224 Z"/>'+
         '<rect class="tsel-glass" data-zone="front" x="440" y="152" width="118" height="72" rx="8"/>'
-      }),
-    artVehicle("Coupe", "#eceff3",
-      "M60,370 L60,322 Q66,302 90,298 L250,272 Q312,264 348,232 L438,150 Q450,140 470,139 L654,139 "+
-      "Q690,143 706,166 L812,254 L944,270 Q970,274 974,304 L976,370 Q976,390 956,390 L80,390 Q60,390 60,370 Z",
-      { wheels:[248,806], shapes:
-        '<path class="tsel-glass" data-zone="windshield" d="M398,224 L452,152 L512,152 L512,224 Z"/>'+
-        '<rect class="tsel-glass" data-zone="front" x="522" y="150" width="150" height="74" rx="9"/>'+
-        '<path class="tsel-glass" data-zone="rear" d="M656,150 L682,150 Q694,152 706,172 L760,224 L682,224 Z"/>'
       })
-  ];
+  );
 
   /* =========================================================================
      4) STATE + RENDER
      ========================================================================= */
   var svgNS = "http://www.w3.org/2000/svg";
+  var ALIGN = params.get("align") === "1";
   var state = {
     v: 0,
     zones: { front: null, rear: null, windshield: null }, // null = factory / no tint
@@ -284,24 +301,24 @@
     return Math.max(0, Math.min(0.92, 1 - vlt / 100 + 0.03));
   }
 
-  var glassEls = [];
+  var glassEls = [];   // { tint, zone, base, sheen }
   var strip = null;
 
-  function zoneSvg(zone, poly) {
-    // build a <polygon> for photo vehicles
-    var pts = poly.map(function (p) { return p[0] + "," + p[1]; }).join(" ");
-    return '<polygon class="tsel-glass" data-zone="' + zone + '" points="' + pts + '"></polygon>';
-  }
+  function ptsStr(poly) { return poly.map(function (p) { return p[0] + "," + p[1]; }).join(" "); }
 
   function renderVehicle() {
     var v = VEHICLES[state.v];
+    var isPhoto = !!v.image;
     var inner;
-    if (v.image) {
-      inner = '<image href="' + v.image + '" x="0" y="0" width="'
-            + v.viewBox.split(" ")[2] + '" height="' + v.viewBox.split(" ")[3]
+
+    if (isPhoto) {
+      var w = v.viewBox.split(" ")[2], h = v.viewBox.split(" ")[3];
+      inner = '<image href="' + v.image + '" x="0" y="0" width="' + w + '" height="' + h
             + '" preserveAspectRatio="xMidYMid meet"></image>';
       ["front", "rear", "windshield"].forEach(function (z) {
-        (v.zones && v.zones[z] ? v.zones[z] : []).forEach(function (poly) { inner += zoneSvg(z, poly); });
+        (v.zones && v.zones[z] ? v.zones[z] : []).forEach(function (poly) {
+          inner += '<polygon class="tsel-glass" data-zone="' + z + '" points="' + ptsStr(poly) + '"></polygon>';
+        });
       });
     } else {
       inner = v.art;
@@ -323,12 +340,10 @@
     var bodyEl = svg.querySelector(".tsel-body");
     if (bodyEl && v.bodyColor) bodyEl.setAttribute("fill", v.bodyColor);
 
-    // Layer tint + sheen over each glass shape (works for path/rect/polygon)
     glassEls = [];
     strip = null;
     Array.prototype.slice.call(svg.querySelectorAll(".tsel-glass")).forEach(function (base) {
-      if (!v.image) base.setAttribute("fill", "url(#tselSky)");
-      else base.setAttribute("fill", "transparent");
+      base.setAttribute("fill", isPhoto ? "transparent" : "url(#tselSky)");
       var zone = base.getAttribute("data-zone");
 
       var tint = base.cloneNode(false);
@@ -338,12 +353,14 @@
       tint.style.pointerEvents = "none";
       base.parentNode.insertBefore(tint, base.nextSibling);
 
-      var sheen = base.cloneNode(false);
-      sheen.removeAttribute("class");
-      sheen.setAttribute("fill", "url(#tselSheen)");
-      sheen.setAttribute("fill-opacity", v.image ? "0.5" : "1");
-      sheen.style.pointerEvents = "none";
-      tint.parentNode.insertBefore(sheen, tint.nextSibling);
+      var sheen = null;
+      if (!isPhoto) { // real photos already have real reflections — skip the fake sheen
+        sheen = base.cloneNode(false);
+        sheen.removeAttribute("class");
+        sheen.setAttribute("fill", "url(#tselSheen)");
+        sheen.style.pointerEvents = "none";
+        tint.parentNode.insertBefore(sheen, tint.nextSibling);
+      }
 
       glassEls.push({ tint: tint, zone: zone, base: base, sheen: sheen });
     });
@@ -357,15 +374,16 @@
         strip.setAttribute("x", b.x);
         strip.setAttribute("y", b.y);
         strip.setAttribute("width", b.width);
-        strip.setAttribute("height", Math.max(10, b.height * 0.28));
+        strip.setAttribute("height", Math.max(8, b.height * 0.28));
         strip.setAttribute("fill", "#080a0e");
         strip.setAttribute("fill-opacity", "0");
         strip.style.pointerEvents = "none";
-        ws.sheen.parentNode.insertBefore(strip, ws.sheen.nextSibling);
-      } catch (e) { /* getBBox unavailable before layout — ignore */ }
+        (ws.sheen || ws.tint).parentNode.insertBefore(strip, (ws.sheen || ws.tint).nextSibling);
+      } catch (e) { /* getBBox needs layout — ignore */ }
     }
 
     applyTint();
+    if (ALIGN) renderAlign(svg);
   }
 
   function applyTint() {
@@ -408,8 +426,7 @@
         p.className = "tsel-pill" + (state.zones[zone] === vlt ? " tsel-on" : "");
         p.textContent = pad(vlt);
         p.addEventListener("click", function () {
-          // clicking the active pill again clears back to factory
-          state.zones[zone] = (state.zones[zone] === vlt) ? null : vlt;
+          state.zones[zone] = (state.zones[zone] === vlt) ? null : vlt; // click again = factory
           buildPills();
           applyTint();
         });
@@ -419,7 +436,7 @@
   }
 
   /* =========================================================================
-     6) SUMMARY + CTA (selection is passed to the quote link as a lead)
+     6) SUMMARY + CTA
      ========================================================================= */
   function label(vlt) { return vlt == null ? "Factory" : pad(vlt) + "%"; }
 
@@ -457,7 +474,122 @@
   });
 
   /* =========================================================================
-     7) INIT
+     7) ALIGNMENT EDITOR  (open the tool with ?align=1)
+        Lets you drag the window outlines onto a real photo and copy the
+        resulting coordinates. Photo vehicles only.
+     ========================================================================= */
+  var alignZone = "front";
+  var addMode = false;
+
+  function buildAlignPanel() {
+    if (document.querySelector(".tsel-align")) return;
+    var box = document.createElement("div");
+    box.className = "tsel-align";
+    box.innerHTML =
+      '<h3>Alignment mode</h3>' +
+      '<p>Pick a window, then <b>drag the dots</b> to hug the glass. Use <b>Add point</b> then click the photo to add a corner.</p>' +
+      '<div class="zbtns">' +
+        '<button data-z="front">Front</button>' +
+        '<button data-z="rear">Back</button>' +
+        '<button data-z="windshield">Windshield</button>' +
+      '</div>' +
+      '<div class="abtns">' +
+        '<button id="alAdd">Add point</button>' +
+        '<button id="alUndo">Undo point</button>' +
+        '<button id="alClear">Clear window</button>' +
+        '<button id="alCopy">Copy zones</button>' +
+      '</div>' +
+      '<textarea id="alOut" readonly></textarea>' +
+      '<p>Copy the box above and send it to me, or paste it into the vehicle\'s <code>zones</code>.</p>';
+    document.body.appendChild(box);
+
+    box.querySelectorAll(".zbtns button").forEach(function (b) {
+      b.addEventListener("click", function () { alignZone = b.getAttribute("data-z"); addMode = false; refreshAlignUI(); renderVehicle(); });
+    });
+    box.querySelector("#alAdd").addEventListener("click", function () { addMode = !addMode; refreshAlignUI(); });
+    box.querySelector("#alUndo").addEventListener("click", function () {
+      var poly = curPoly(); if (poly && poly.length) { poly.pop(); renderVehicle(); }
+    });
+    box.querySelector("#alClear").addEventListener("click", function () {
+      var v = VEHICLES[state.v]; if (v.zones) { v.zones[alignZone] = [[]]; renderVehicle(); }
+    });
+    box.querySelector("#alCopy").addEventListener("click", function () {
+      var t = document.getElementById("alOut"); t.select(); document.execCommand("copy");
+    });
+    refreshAlignUI();
+  }
+
+  function refreshAlignUI() {
+    document.querySelectorAll(".tsel-align .zbtns button").forEach(function (b) {
+      b.classList.toggle("on", b.getAttribute("data-z") === alignZone);
+    });
+    var add = document.getElementById("alAdd");
+    if (add) { add.textContent = addMode ? "Click photo…" : "Add point"; add.style.background = addMode ? "var(--tsel-accent)" : ""; }
+    var out = document.getElementById("alOut");
+    if (out) out.value = JSON.stringify(VEHICLES[state.v].zones, null, 1);
+  }
+
+  function curPoly() {
+    var v = VEHICLES[state.v];
+    if (!v.zones) return null;
+    if (!v.zones[alignZone] || !v.zones[alignZone][0]) v.zones[alignZone] = [[]];
+    return v.zones[alignZone][0];
+  }
+
+  function svgPoint(svg, evt) {
+    var pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+    var m = svg.getScreenCTM(); if (!m) return null;
+    var p = pt.matrixTransform(m.inverse());
+    return [Math.round(p.x), Math.round(p.y)];
+  }
+
+  function renderAlign(svg) {
+    var v = VEHICLES[state.v];
+    if (!v.zones) { buildAlignPanel(); return; } // illustrations: nothing to align
+    buildAlignPanel();
+
+    var colors = { front: "#ff5a1f", rear: "#22c55e", windshield: "#38bdf8" };
+    var layer = document.createElementNS(svgNS, "g");
+    ["front", "rear", "windshield"].forEach(function (z) {
+      (v.zones[z] || []).forEach(function (poly) {
+        if (poly.length > 1) {
+          var pg = document.createElementNS(svgNS, "polygon");
+          pg.setAttribute("points", ptsStr(poly));
+          pg.setAttribute("fill", colors[z] + (z === alignZone ? "44" : "22"));
+          pg.setAttribute("stroke", colors[z]);
+          pg.setAttribute("stroke-width", "2");
+          layer.appendChild(pg);
+        }
+      });
+    });
+    // draggable vertices for the current zone's polygon
+    var poly = curPoly();
+    poly.forEach(function (pt, idx) {
+      var c = document.createElementNS(svgNS, "circle");
+      c.setAttribute("cx", pt[0]); c.setAttribute("cy", pt[1]); c.setAttribute("r", 9);
+      c.setAttribute("fill", "#fff"); c.setAttribute("stroke", colors[alignZone]); c.setAttribute("stroke-width", "3");
+      c.style.cursor = "grab";
+      c.addEventListener("pointerdown", function (e) {
+        e.preventDefault(); c.setPointerCapture(e.pointerId);
+        function move(ev) { var p = svgPoint(svg, ev); if (p) { poly[idx] = p; renderVehicle(); } }
+        function up(ev) { c.releasePointerCapture(e.pointerId); svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); }
+        svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up);
+      });
+      layer.appendChild(c);
+    });
+    svg.appendChild(layer);
+
+    svg.style.cursor = addMode ? "crosshair" : "default";
+    svg.onclick = function (e) {
+      if (!addMode) return;
+      if (e.target.tagName === "circle") return;
+      var p = svgPoint(svg, e); if (p) { curPoly().push(p); renderVehicle(); }
+    };
+    refreshAlignUI();
+  }
+
+  /* =========================================================================
+     8) INIT
      ========================================================================= */
   buildVehicles();
   buildPills();
