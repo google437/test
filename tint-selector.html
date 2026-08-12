@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Window Tint Selector</title>
+<style>
+  /* Everything is scoped to .tsel so it can't collide with the host site */
+  .tsel {
+    --tsel-accent: #f4511e;
+    --tsel-accent-dark: #d84315;
+    --tsel-bg: #ffffff;
+    --tsel-panel: #f7f8fa;
+    --tsel-border: #e4e7ec;
+    --tsel-text: #101828;
+    --tsel-muted: #667085;
+    box-sizing: border-box;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 22px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--tsel-text);
+    background: var(--tsel-bg);
+    border-radius: 18px;
+    box-shadow: 0 6px 30px rgba(16, 24, 40, .08);
+  }
+  .tsel * { box-sizing: border-box; }
+
+  .tsel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .tsel-head h1 { font-size: 1.4rem; margin: 0; line-height:1.2; }
+  .tsel-head .tsel-sub { color: var(--tsel-muted); font-size: .85rem; margin: 3px 0 0; }
+  .tsel-phone { display:inline-flex; align-items:center; gap:7px; font-weight:700; font-size:.95rem;
+    text-decoration:none; color: var(--tsel-accent); border:1px solid var(--tsel-border);
+    padding:8px 14px; border-radius:999px; white-space:nowrap; }
+  .tsel-phone:hover { background: #fff5f2; }
+
+  /* ---- Preview stage ---- */
+  .tsel-stage {
+    position: relative;
+    background: radial-gradient(120% 90% at 50% 30%, #ffffff 0%, #eef1f5 70%, #e3e7ec 100%);
+    border: 1px solid var(--tsel-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .tsel-stage svg { display:block; width:100%; height:auto; }
+
+  /* ---- Controls ---- */
+  .tsel-controls {
+    display:grid; grid-template-columns: minmax(200px, 260px) 1fr; gap: 28px;
+    margin-top: 22px; align-items:start;
+  }
+  @media (max-width: 720px) { .tsel-controls { grid-template-columns: 1fr; gap:22px; } }
+
+  .tsel-block-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 14px; }
+
+  .tsel-vehicles { display:flex; flex-wrap:wrap; gap:10px; }
+  .tsel-vbtn {
+    border:1px solid var(--tsel-border); background:#fff; color:var(--tsel-text);
+    border-radius:999px; padding:9px 20px; cursor:pointer; font-size:.92rem; font-weight:600;
+    transition: all .12s;
+  }
+  .tsel-vbtn:hover { border-color: var(--tsel-accent); }
+  .tsel-vbtn.tsel-on { background: var(--tsel-accent); border-color: var(--tsel-accent); color:#fff; }
+
+  .tsel-row { display:grid; grid-template-columns: 118px 1fr; align-items:center; gap:14px; margin-bottom:14px; }
+  @media (max-width: 480px) { .tsel-row { grid-template-columns: 1fr; gap:6px; } }
+  .tsel-rlabel { font-size: 1.05rem; font-weight:600; }
+  .tsel-pills { display:flex; flex-wrap:wrap; gap:8px; }
+  .tsel-pill {
+    min-width:52px; text-align:center; border:1px solid var(--tsel-border); background:#fff;
+    color:var(--tsel-text); border-radius:999px; padding:9px 6px; cursor:pointer;
+    font-size:.9rem; font-weight:600; transition: all .12s;
+  }
+  .tsel-pill:hover { border-color: var(--tsel-accent); }
+  .tsel-pill.tsel-on { background:#101828; border-color:#101828; color:#fff; }
+
+  .tsel-check { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:.85rem; color:var(--tsel-text); cursor:pointer; }
+  .tsel-check input { width:16px; height:16px; accent-color: var(--tsel-accent); }
+
+  /* ---- Recommendation / summary ---- */
+  .tsel-reco { margin-top: 22px; border-top:1px solid var(--tsel-border); padding-top:18px;
+    display:grid; grid-template-columns: 1fr auto; gap:18px; align-items:center; }
+  @media (max-width: 640px) { .tsel-reco { grid-template-columns: 1fr; } }
+  .tsel-reco h2 { font-size:1.15rem; font-weight:800; margin:0 0 8px; }
+  .tsel-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .tsel-chip { background:var(--tsel-panel); border:1px solid var(--tsel-border); border-radius:999px;
+    padding:6px 13px; font-size:.83rem; }
+  .tsel-chip b { color: var(--tsel-accent-dark); }
+  .tsel-cta { display:inline-block; text-align:center; text-decoration:none; background: var(--tsel-accent);
+    color:#fff; padding:14px 26px; border-radius:10px; font-size:1rem; font-weight:700; border:none;
+    cursor:pointer; white-space:nowrap; transition: background .15s; }
+  .tsel-cta:hover { background: var(--tsel-accent-dark); }
+
+  .tsel-legend { font-size:.74rem; color:var(--tsel-muted); line-height:1.5; margin-top:16px; }
+  .tsel-legend b { color: var(--tsel-text); }
+  .tsel-foot { text-align:center; font-size:.72rem; color:var(--tsel-muted); margin-top:12px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== EMBED FROM HERE ==================== -->
+<div class="tsel" id="tsel">
+  <div class="tsel-head">
+    <div>
+      <h1 id="tselShop">Window Tint Selector</h1>
+      <p class="tsel-sub">See how each tint shade looks on your vehicle before you book.</p>
+    </div>
+    <a class="tsel-phone" id="tselPhone" href="#" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2z"/></svg>
+      <span id="tselPhoneText"></span>
+    </a>
+  </div>
+
+  <div class="tsel-stage" id="tselStage"><!-- vehicle SVG injected here --></div>
+
+  <div class="tsel-controls">
+    <div>
+      <h2 class="tsel-block-title">Vehicle Type</h2>
+      <div class="tsel-vehicles" id="tselVehicles"></div>
+    </div>
+
+    <div>
+      <h2 class="tsel-block-title">Window Tints</h2>
+      <div class="tsel-row">
+        <span class="tsel-rlabel">Front</span>
+        <div class="tsel-pills" data-zone="front"></div>
+      </div>
+      <div class="tsel-row">
+        <span class="tsel-rlabel">Back</span>
+        <div class="tsel-pills" data-zone="rear"></div>
+      </div>
+      <div class="tsel-row">
+        <span class="tsel-rlabel">Windshield</span>
+        <div class="tsel-pills" data-zone="windshield"></div>
+      </div>
+      <label class="tsel-check"><input type="checkbox" id="tselVisor"> Add sun-visor strip across the top of the windshield</label>
+    </div>
+  </div>
+
+  <div class="tsel-reco">
+    <div>
+      <h2>Your selection</h2>
+      <div class="tsel-chips" id="tselChips"></div>
+    </div>
+    <a class="tsel-cta" id="tselCta" href="#">Get a Free Quote</a>
+  </div>
+
+  <p class="tsel-legend">
+    <b>VLT = Visible Light Transmission.</b> A lower number means darker tint and less light through the glass:
+    <b>05</b> is "limo" dark, <b>70</b> is nearly clear. Preview is for illustration &mdash; always confirm your
+    state's legal tint limits before installing.
+  </p>
+  <p class="tsel-foot" id="tselFoot"></p>
+</div>
+<!-- ==================== EMBED TO HERE ==================== -->
+
+<script>
+(function () {
+  "use strict";
+
+  /* =========================================================================
+     1) BRANDING — override from the embed URL, e.g.
+        tint-selector.html?shop=Cutting%20Edge%20Tint&phone=555-123-4567
+          &accent=%23f4511e&cta=Book%20Now&url=https://yoursite.com/contact
+     ========================================================================= */
+  var params = new URLSearchParams(window.location.search);
+  var CONFIG = {
+    shop:    params.get("shop")   || "Window Tint Selector",
+    phone:   params.get("phone")  || "",
+    accent:  params.get("accent") || "",
+    ctaText: params.get("cta")    || "Get a Free Quote",
+    ctaUrl:  params.get("url")    || "",
+    footer:  params.get("footer") || ""
+  };
+
+  var root = document.getElementById("tsel");
+  if (CONFIG.accent) {
+    root.style.setProperty("--tsel-accent", CONFIG.accent);
+    root.style.setProperty("--tsel-accent-dark", CONFIG.accent);
+  }
+  document.getElementById("tselShop").textContent = CONFIG.shop;
+  if (CONFIG.phone) {
+    var ph = document.getElementById("tselPhone");
+    ph.style.display = "inline-flex";
+    ph.href = "tel:" + CONFIG.phone.replace(/[^0-9+]/g, "");
+    document.getElementById("tselPhoneText").textContent = CONFIG.phone;
+  }
+  document.getElementById("tselCta").textContent = CONFIG.ctaText;
+  if (CONFIG.footer) document.getElementById("tselFoot").textContent = CONFIG.footer;
+
+  /* =========================================================================
+     2) TINT LEVELS shown as pills (matches the classic 70/50/35/20/05 set)
+     ========================================================================= */
+  var LEVELS = [70, 50, 35, 20, 5]; // VLT %
+
+  /* =========================================================================
+     3) VEHICLES  ← EDIT THIS LIST FOR EACH CLIENT
+        Two ways to define a vehicle:
+
+        A) PHOTO (looks best — like the reference site). Provide an image plus
+           the window regions as polygons in the image's own coordinate space:
+             {
+               name: "Tesla Model S",
+               viewBox: "0 0 1600 900",           // = image width/height
+               image: "https://cdn.site.com/tesla.png",  // or a data: URI
+               zones: {
+                 front:      [[[x,y],[x,y],...]],  // one or more polygons
+                 rear:       [[[x,y],...]],
+                 windshield: [[[x,y],...]]
+               }
+             }
+           (Send me any car photo and I'll map these polygon points for you.)
+
+        B) BUILT-IN ART (used below so the tool works out of the box with no
+           images). "art" is inline SVG whose glass shapes carry data-zone.
+     ========================================================================= */
+  function wheels(x1, x2) {
+    return '<g fill="#1a1d22"><circle cx="'+x1+'" cy="388" r="66"/><circle cx="'+x2+'" cy="388" r="66"/></g>'
+         + '<g fill="#3a3f47"><circle cx="'+x1+'" cy="388" r="40"/><circle cx="'+x2+'" cy="388" r="40"/></g>'
+         + '<g fill="#c9ced6"><circle cx="'+x1+'" cy="388" r="15"/><circle cx="'+x2+'" cy="388" r="15"/></g>';
+  }
+  function artVehicle(name, bodyColor, body, glass) {
+    return {
+      name: name,
+      viewBox: "0 0 1040 480",
+      bodyColor: bodyColor,
+      art: '<ellipse cx="520" cy="440" rx="430" ry="26" fill="#00000018"/>'
+         + '<path class="tsel-body" d="' + body + '"/>'
+         + '<path d="' + body + '" fill="none" stroke="#00000018" stroke-width="2"/>'
+         + wheels.apply(null, glass.wheels) + glass.shapes
+    };
+  }
+
+  var VEHICLES = [
+    artVehicle("Sedan", "#b5202b",
+      "M64,372 L64,320 Q70,300 92,296 L252,270 Q300,264 330,236 L392,152 Q400,142 418,140 L676,140 "+
+      "Q702,142 714,160 L806,252 L940,268 Q968,272 972,302 L974,372 Q974,392 954,392 L84,392 Q64,392 64,372 Z",
+      { wheels:[250,800], shapes:
+        '<path class="tsel-glass" data-zone="windshield" d="M352,228 L406,156 L470,156 L470,228 Z"/>'+
+        '<rect class="tsel-glass" data-zone="front" x="480" y="154" width="84" height="74" rx="8"/>'+
+        '<rect class="tsel-glass" data-zone="rear"  x="574" y="154" width="82" height="74" rx="8"/>'+
+        '<path class="tsel-glass" data-zone="rear" d="M666,156 L678,156 Q704,157 714,172 L766,228 L666,228 Z"/>'
+      }),
+    artVehicle("SUV", "#20242b",
+      "M60,374 L60,314 Q66,296 88,292 L236,270 Q286,264 314,232 L372,150 Q380,140 398,138 L742,138 "+
+      "Q772,140 786,158 L860,244 L946,258 Q972,262 976,292 L978,374 Q978,394 958,394 L80,394 Q60,394 60,374 Z",
+      { wheels:[238,812], shapes:
+        '<path class="tsel-glass" data-zone="windshield" d="M334,222 L388,152 L452,152 L452,222 Z"/>'+
+        '<rect class="tsel-glass" data-zone="front" x="462" y="150" width="92" height="74" rx="8"/>'+
+        '<rect class="tsel-glass" data-zone="rear"  x="564" y="150" width="92" height="74" rx="8"/>'+
+        '<path class="tsel-glass" data-zone="rear" d="M666,150 L748,150 Q772,152 782,166 L816,222 L666,222 Z"/>'
+      }),
+    artVehicle("Truck", "#1f4e86",
+      "M56,376 L56,318 Q62,300 84,296 L214,272 Q262,266 290,236 L346,152 Q354,142 372,140 L556,140 "+
+      "Q576,142 580,162 L580,300 L980,300 L980,376 Q980,396 960,396 L76,396 Q56,396 56,376 Z",
+      { wheels:[228,812], shapes:
+        '<rect x="588" y="150" width="392" height="150" rx="6" fill="#00000018"/>'+
+        '<path class="tsel-glass" data-zone="windshield" d="M312,224 L364,154 L430,154 L430,224 Z"/>'+
+        '<rect class="tsel-glass" data-zone="front" x="440" y="152" width="118" height="72" rx="8"/>'
+      }),
+    artVehicle("Coupe", "#eceff3",
+      "M60,370 L60,322 Q66,302 90,298 L250,272 Q312,264 348,232 L438,150 Q450,140 470,139 L654,139 "+
+      "Q690,143 706,166 L812,254 L944,270 Q970,274 974,304 L976,370 Q976,390 956,390 L80,390 Q60,390 60,370 Z",
+      { wheels:[248,806], shapes:
+        '<path class="tsel-glass" data-zone="windshield" d="M398,224 L452,152 L512,152 L512,224 Z"/>'+
+        '<rect class="tsel-glass" data-zone="front" x="522" y="150" width="150" height="74" rx="9"/>'+
+        '<path class="tsel-glass" data-zone="rear" d="M656,150 L682,150 Q694,152 706,172 L760,224 L682,224 Z"/>'
+      })
+  ];
+
+  /* =========================================================================
+     4) STATE + RENDER
+     ========================================================================= */
+  var svgNS = "http://www.w3.org/2000/svg";
+  var state = {
+    v: 0,
+    zones: { front: null, rear: null, windshield: null }, // null = factory / no tint
+    visor: false
+  };
+
+  // Lower VLT -> darker glass -> higher overlay opacity
+  function vltToAlpha(vlt) {
+    if (vlt == null) return 0;
+    return Math.max(0, Math.min(0.92, 1 - vlt / 100 + 0.03));
+  }
+
+  var glassEls = [];
+  var strip = null;
+
+  function zoneSvg(zone, poly) {
+    // build a <polygon> for photo vehicles
+    var pts = poly.map(function (p) { return p[0] + "," + p[1]; }).join(" ");
+    return '<polygon class="tsel-glass" data-zone="' + zone + '" points="' + pts + '"></polygon>';
+  }
+
+  function renderVehicle() {
+    var v = VEHICLES[state.v];
+    var inner;
+    if (v.image) {
+      inner = '<image href="' + v.image + '" x="0" y="0" width="'
+            + v.viewBox.split(" ")[2] + '" height="' + v.viewBox.split(" ")[3]
+            + '" preserveAspectRatio="xMidYMid meet"></image>';
+      ["front", "rear", "windshield"].forEach(function (z) {
+        (v.zones && v.zones[z] ? v.zones[z] : []).forEach(function (poly) { inner += zoneSvg(z, poly); });
+      });
+    } else {
+      inner = v.art;
+    }
+
+    document.getElementById("tselStage").innerHTML =
+      '<svg viewBox="' + v.viewBox + '" role="img" aria-label="' + v.name + ' tint preview">' +
+        '<defs>' +
+          '<linearGradient id="tselSky" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="#cfe0f2"/><stop offset="1" stop-color="#9fb4c9"/></linearGradient>' +
+          '<linearGradient id="tselSheen" gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0" stop-color="#fff" stop-opacity="0"/>' +
+            '<stop offset="0.42" stop-color="#fff" stop-opacity="0.32"/>' +
+            '<stop offset="0.55" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+        '</defs>' + inner +
+      '</svg>';
+
+    var svg = document.getElementById("tselStage").querySelector("svg");
+    var bodyEl = svg.querySelector(".tsel-body");
+    if (bodyEl && v.bodyColor) bodyEl.setAttribute("fill", v.bodyColor);
+
+    // Layer tint + sheen over each glass shape (works for path/rect/polygon)
+    glassEls = [];
+    strip = null;
+    Array.prototype.slice.call(svg.querySelectorAll(".tsel-glass")).forEach(function (base) {
+      if (!v.image) base.setAttribute("fill", "url(#tselSky)");
+      else base.setAttribute("fill", "transparent");
+      var zone = base.getAttribute("data-zone");
+
+      var tint = base.cloneNode(false);
+      tint.removeAttribute("class");
+      tint.setAttribute("fill", "#080a0e");
+      tint.setAttribute("fill-opacity", "0");
+      tint.style.pointerEvents = "none";
+      base.parentNode.insertBefore(tint, base.nextSibling);
+
+      var sheen = base.cloneNode(false);
+      sheen.removeAttribute("class");
+      sheen.setAttribute("fill", "url(#tselSheen)");
+      sheen.setAttribute("fill-opacity", v.image ? "0.5" : "1");
+      sheen.style.pointerEvents = "none";
+      tint.parentNode.insertBefore(sheen, tint.nextSibling);
+
+      glassEls.push({ tint: tint, zone: zone, base: base, sheen: sheen });
+    });
+
+    // Sun-visor strip = top band of the windshield, computed from its bbox
+    var ws = glassEls.filter(function (g) { return g.zone === "windshield"; })[0];
+    if (ws) {
+      try {
+        var b = ws.base.getBBox();
+        strip = document.createElementNS(svgNS, "rect");
+        strip.setAttribute("x", b.x);
+        strip.setAttribute("y", b.y);
+        strip.setAttribute("width", b.width);
+        strip.setAttribute("height", Math.max(10, b.height * 0.28));
+        strip.setAttribute("fill", "#080a0e");
+        strip.setAttribute("fill-opacity", "0");
+        strip.style.pointerEvents = "none";
+        ws.sheen.parentNode.insertBefore(strip, ws.sheen.nextSibling);
+      } catch (e) { /* getBBox unavailable before layout — ignore */ }
+    }
+
+    applyTint();
+  }
+
+  function applyTint() {
+    glassEls.forEach(function (g) {
+      g.tint.setAttribute("fill-opacity", String(vltToAlpha(state.zones[g.zone])));
+    });
+    if (strip) strip.setAttribute("fill-opacity", state.visor ? String(vltToAlpha(5)) : "0");
+    renderSummary();
+  }
+
+  /* =========================================================================
+     5) CONTROLS
+     ========================================================================= */
+  function buildVehicles() {
+    var wrap = document.getElementById("tselVehicles");
+    wrap.innerHTML = "";
+    VEHICLES.forEach(function (v, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tsel-vbtn" + (i === state.v ? " tsel-on" : "");
+      b.textContent = v.name;
+      b.addEventListener("click", function () {
+        state.v = i;
+        buildVehicles();
+        renderVehicle();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+  function buildPills() {
+    document.querySelectorAll(".tsel-pills").forEach(function (row) {
+      var zone = row.getAttribute("data-zone");
+      row.innerHTML = "";
+      LEVELS.forEach(function (vlt) {
+        var p = document.createElement("button");
+        p.type = "button";
+        p.className = "tsel-pill" + (state.zones[zone] === vlt ? " tsel-on" : "");
+        p.textContent = pad(vlt);
+        p.addEventListener("click", function () {
+          // clicking the active pill again clears back to factory
+          state.zones[zone] = (state.zones[zone] === vlt) ? null : vlt;
+          buildPills();
+          applyTint();
+        });
+        row.appendChild(p);
+      });
+    });
+  }
+
+  /* =========================================================================
+     6) SUMMARY + CTA (selection is passed to the quote link as a lead)
+     ========================================================================= */
+  function label(vlt) { return vlt == null ? "Factory" : pad(vlt) + "%"; }
+
+  function renderSummary() {
+    var v = VEHICLES[state.v];
+    var chips = [
+      ["Vehicle", v.name],
+      ["Front", label(state.zones.front)],
+      ["Back", label(state.zones.rear)],
+      ["Windshield", state.visor ? "Visor strip" : label(state.zones.windshield)]
+    ];
+    document.getElementById("tselChips").innerHTML = chips.map(function (c) {
+      return '<span class="tsel-chip">' + c[0] + ': <b>' + c[1] + '</b></span>';
+    }).join("");
+
+    var cta = document.getElementById("tselCta");
+    if (CONFIG.ctaUrl) {
+      var q = new URLSearchParams({
+        vehicle: v.name,
+        front: label(state.zones.front),
+        rear: label(state.zones.rear),
+        windshield: state.visor ? "Visor strip" : label(state.zones.windshield)
+      });
+      cta.href = CONFIG.ctaUrl + (CONFIG.ctaUrl.indexOf("?") > -1 ? "&" : "?") + q.toString();
+    } else if (CONFIG.phone) {
+      cta.href = "tel:" + CONFIG.phone.replace(/[^0-9+]/g, "");
+    } else {
+      cta.href = "#";
+    }
+  }
+
+  document.getElementById("tselVisor").addEventListener("change", function (e) {
+    state.visor = e.target.checked;
+    applyTint();
+  });
+
+  /* =========================================================================
+     7) INIT
+     ========================================================================= */
+  buildVehicles();
+  buildPills();
+  renderVehicle();
+})();
+</script>
+
+</body>
+</html>
