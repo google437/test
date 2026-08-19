@@ -41,6 +41,7 @@
     border: 1px solid var(--tsel-border);
     border-radius: 14px;
     overflow: hidden;
+    min-height: 120px;
   }
   .tsel-stage svg { display:block; width:100%; height:auto; }
 
@@ -107,7 +108,7 @@
   .tsel-align .abtns { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
   .tsel-align .abtns button { padding:6px 8px; border-radius:7px; border:1px solid #333a44;
     background:#171b22; color:#cbd2da; cursor:pointer; }
-  .tsel-align textarea { width:100%; height:150px; background:#05070a; color:#9fe8b0; border:1px solid #333a44;
+  .tsel-align textarea { width:100%; height:140px; background:#05070a; color:#9fe8b0; border:1px solid #333a44;
     border-radius:7px; font-family:monospace; font-size:.72rem; padding:8px; }
   .tsel-align p { margin:6px 0; color:#9aa4b1; line-height:1.4; }
 </style>
@@ -212,33 +213,38 @@
   /* =========================================================================
      3) VEHICLES  ← EDIT THIS LIST FOR EACH CLIENT
 
-        PHOTO vehicles (looks best): give an image + the window regions as
-        polygons in the image's own coordinate space. viewBox MUST match the
-        image's aspect ratio (width height). Send a car photo and use
-        ?align=1 in the browser to drag the window outlines into place — it
-        prints the exact "zones" object to paste back here.
+        PHOTO vehicle: { name, image, zones }. Coordinates are FRACTIONS of the
+        image (0..1 across width, 0..1 down height), so they auto-scale to the
+        real photo — no need to know its pixel size. Open the tool with
+        ?align=1 to drag the outlines onto the glass and copy the coordinates.
 
         Each zone is an array of polygons; each polygon is an array of [x,y]
-        points. front = front side glass, rear = rear side + back glass,
-        windshield = the windshield.
+        fractions. front = front side glass, rear = rear side/quarter/back
+        glass, windshield = the windshield.
      ========================================================================= */
   var VEHICLES = [
     {
-      name: "Tesla Model 3",
-      // Aspect ratio of the source photo (looks ~4:3). Adjust if yours differs.
-      viewBox: "0 0 1000 750",
-      image: "https://tru-tints.com/wp-content/uploads/2025/09/IMG_3932.webp",
+      name: "BMW 6 Series",
+      image: "https://tru-tints.com/wp-content/uploads/2026/08/chapay-sport-2746332-scaled.png",
       // Starting estimates — refine with ?align=1 so they hug the real glass.
       zones: {
-        front:      [ [[300,300],[470,285],[478,400],[300,410]] ],
-        rear:       [ [[486,285],[660,285],[700,320],[720,400],[486,400]] ],
-        windshield: [ [[250,320],[300,232],[300,300],[255,360]] ]
+        front:      [ [[0.535,0.260],[0.660,0.250],[0.660,0.345],[0.550,0.350]] ],
+        rear:       [ [[0.675,0.255],[0.745,0.265],[0.735,0.345],[0.675,0.345]] ],
+        windshield: [ [[0.440,0.440],[0.515,0.255],[0.550,0.275],[0.485,0.450]] ]
+      }
+    },
+    {
+      name: "Tesla Model 3",
+      image: "https://tru-tints.com/wp-content/uploads/2025/09/IMG_3932.webp",
+      zones: {
+        front:      [ [[0.300,0.400],[0.470,0.380],[0.478,0.533],[0.300,0.547]] ],
+        rear:       [ [[0.486,0.380],[0.660,0.380],[0.700,0.427],[0.720,0.533],[0.486,0.533]] ],
+        windshield: [ [[0.250,0.427],[0.300,0.309],[0.300,0.400],[0.255,0.480]] ]
       }
     }
   ];
 
-  /* Built-in illustrated vehicles (kept as fallback / extra options). Remove
-     if you only want real photos. */
+  /* Built-in illustrated vehicles (kept as fallback / extra options). */
   function wheels(x1, x2) {
     return '<g fill="#1a1d22"><circle cx="'+x1+'" cy="388" r="66"/><circle cx="'+x2+'" cy="388" r="66"/></g>'
          + '<g fill="#3a3f47"><circle cx="'+x1+'" cy="388" r="40"/><circle cx="'+x2+'" cy="388" r="40"/></g>'
@@ -246,9 +252,7 @@
   }
   function artVehicle(name, bodyColor, body, glass) {
     return {
-      name: name,
-      viewBox: "0 0 1040 480",
-      bodyColor: bodyColor,
+      name: name, viewBox: "0 0 1040 480", bodyColor: bodyColor,
       art: '<ellipse cx="520" cy="440" rx="430" ry="26" fill="#00000018"/>'
          + '<path class="tsel-body" d="' + body + '"/>'
          + '<path d="' + body + '" fill="none" stroke="#00000018" stroke-width="2"/>'
@@ -285,46 +289,115 @@
   );
 
   /* =========================================================================
-     4) STATE + RENDER
+     4) STATE
      ========================================================================= */
   var svgNS = "http://www.w3.org/2000/svg";
   var ALIGN = params.get("align") === "1";
   var state = {
     v: 0,
     zones: { front: null, rear: null, windshield: null }, // null = factory / no tint
-    visor: false
+    visor: false,
+    imgW: 1000, imgH: 560
   };
 
-  // Lower VLT -> darker glass -> higher overlay opacity
-  function vltToAlpha(vlt) {
+  function vltToAlpha(vlt) { // lower VLT -> darker glass -> more overlay opacity
     if (vlt == null) return 0;
     return Math.max(0, Math.min(0.92, 1 - vlt / 100 + 0.03));
   }
 
-  var glassEls = [];   // { tint, zone, base, sheen }
+  var glassEls = [];   // { base, tint, sheen, zone, poly }
   var strip = null;
 
-  function ptsStr(poly) { return poly.map(function (p) { return p[0] + "," + p[1]; }).join(" "); }
+  function stage() { return document.getElementById("tselStage"); }
+  function fracPts(poly, W, H) {
+    return poly.map(function (p) { return (p[0] * W).toFixed(1) + "," + (p[1] * H).toFixed(1); }).join(" ");
+  }
 
+  /* =========================================================================
+     5) RENDER — dispatch photo vs illustration
+     ========================================================================= */
   function renderVehicle() {
     var v = VEHICLES[state.v];
-    var isPhoto = !!v.image;
-    var inner;
+    if (v.image) renderPhoto(v); else renderIllustration(v);
+  }
 
-    if (isPhoto) {
-      var w = v.viewBox.split(" ")[2], h = v.viewBox.split(" ")[3];
-      inner = '<image href="' + v.image + '" x="0" y="0" width="' + w + '" height="' + h
-            + '" preserveAspectRatio="xMidYMid meet"></image>';
-      ["front", "rear", "windshield"].forEach(function (z) {
-        (v.zones && v.zones[z] ? v.zones[z] : []).forEach(function (poly) {
-          inner += '<polygon class="tsel-glass" data-zone="' + z + '" points="' + ptsStr(poly) + '"></polygon>';
-        });
+  // ---- Photo vehicles (fractional masks, auto-scaled to real image size) ----
+  function renderPhoto(v) {
+    var done = false;
+    function go(W, H) { if (done) return; done = true; drawPhoto(v, W || 1000, H || 560); }
+    var img = new Image();
+    img.onload = function () { go(img.naturalWidth, img.naturalHeight); };
+    img.onerror = function () { go(1000, 560); }; // fallback aspect if the image can't load
+    img.src = v.image;
+    if (img.complete && img.naturalWidth) go(img.naturalWidth, img.naturalHeight);
+  }
+
+  function drawPhoto(v, W, H) {
+    state.imgW = W; state.imgH = H;
+    var inner = '<image href="' + v.image + '" x="0" y="0" width="' + W + '" height="' + H + '"></image>';
+    ["front", "rear", "windshield"].forEach(function (z) {
+      (v.zones[z] || []).forEach(function (poly) {
+        inner += '<polygon class="tsel-glass" data-zone="' + z + '" data-poly="' + fracPts(poly, W, H) + '" points="' + fracPts(poly, W, H) + '"></polygon>';
       });
-    } else {
-      inner = v.art;
-    }
+    });
+    stage().innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + v.name + ' tint preview">' + inner + '</svg>';
+    var svg = stage().querySelector("svg");
 
-    document.getElementById("tselStage").innerHTML =
+    glassEls = []; strip = null;
+    var idx = { front: 0, rear: 0, windshield: 0 };
+    Array.prototype.slice.call(svg.querySelectorAll(".tsel-glass")).forEach(function (base) {
+      var zone = base.getAttribute("data-zone");
+      var poly = v.zones[zone][idx[zone]++]; // reference to the fractional polygon array
+      base.setAttribute("fill", "transparent");
+      var tint = base.cloneNode(false);
+      tint.removeAttribute("class"); tint.removeAttribute("data-poly");
+      tint.setAttribute("fill", "#080a0e"); tint.setAttribute("fill-opacity", "0");
+      tint.style.pointerEvents = "none";
+      base.parentNode.insertBefore(tint, base.nextSibling);
+      glassEls.push({ base: base, tint: tint, sheen: null, zone: zone, poly: poly });
+    });
+
+    // visor strip over the top of the windshield
+    var ws = glassEls.filter(function (g) { return g.zone === "windshield"; })[0];
+    if (ws) {
+      strip = document.createElementNS(svgNS, "rect");
+      strip.setAttribute("fill", "#080a0e"); strip.setAttribute("fill-opacity", "0");
+      strip.style.pointerEvents = "none";
+      ws.tint.parentNode.insertBefore(strip, ws.tint.nextSibling);
+      positionStrip();
+    }
+    applyTint();
+    if (ALIGN) { buildAlignPanel(); drawAlignLayer(svg); wireAlignClicks(svg); }
+  }
+
+  function positionStrip() {
+    if (!strip) return;
+    var ws = glassEls.filter(function (g) { return g.zone === "windshield"; })[0];
+    if (!ws) return;
+    try {
+      var b = ws.base.getBBox();
+      strip.setAttribute("x", b.x); strip.setAttribute("y", b.y);
+      strip.setAttribute("width", b.width); strip.setAttribute("height", Math.max(6, b.height * 0.28));
+    } catch (e) {}
+  }
+
+  // Update geometry from the fractional zones without reloading the image (used while dragging)
+  function syncPhotoGeometry() {
+    var W = state.imgW, H = state.imgH;
+    glassEls.forEach(function (g) {
+      if (!g.poly) return;
+      var pts = fracPts(g.poly, W, H);
+      g.base.setAttribute("points", pts);
+      g.tint.setAttribute("points", pts);
+    });
+    positionStrip();
+    applyTint();
+    if (ALIGN) { var svg = stage().querySelector("svg"); if (svg) drawAlignLayer(svg); refreshAlignUI(); }
+  }
+
+  // ---- Illustrated vehicles ----
+  function renderIllustration(v) {
+    stage().innerHTML =
       '<svg viewBox="' + v.viewBox + '" role="img" aria-label="' + v.name + ' tint preview">' +
         '<defs>' +
           '<linearGradient id="tselSky" x1="0" y1="0" x2="0" y2="1">' +
@@ -333,57 +406,41 @@
             '<stop offset="0" stop-color="#fff" stop-opacity="0"/>' +
             '<stop offset="0.42" stop-color="#fff" stop-opacity="0.32"/>' +
             '<stop offset="0.55" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
-        '</defs>' + inner +
+        '</defs>' + v.art +
       '</svg>';
-
-    var svg = document.getElementById("tselStage").querySelector("svg");
+    var svg = stage().querySelector("svg");
     var bodyEl = svg.querySelector(".tsel-body");
     if (bodyEl && v.bodyColor) bodyEl.setAttribute("fill", v.bodyColor);
 
-    glassEls = [];
-    strip = null;
+    glassEls = []; strip = null;
     Array.prototype.slice.call(svg.querySelectorAll(".tsel-glass")).forEach(function (base) {
-      base.setAttribute("fill", isPhoto ? "transparent" : "url(#tselSky)");
+      base.setAttribute("fill", "url(#tselSky)");
       var zone = base.getAttribute("data-zone");
-
       var tint = base.cloneNode(false);
       tint.removeAttribute("class");
-      tint.setAttribute("fill", "#080a0e");
-      tint.setAttribute("fill-opacity", "0");
+      tint.setAttribute("fill", "#080a0e"); tint.setAttribute("fill-opacity", "0");
       tint.style.pointerEvents = "none";
       base.parentNode.insertBefore(tint, base.nextSibling);
-
-      var sheen = null;
-      if (!isPhoto) { // real photos already have real reflections — skip the fake sheen
-        sheen = base.cloneNode(false);
-        sheen.removeAttribute("class");
-        sheen.setAttribute("fill", "url(#tselSheen)");
-        sheen.style.pointerEvents = "none";
-        tint.parentNode.insertBefore(sheen, tint.nextSibling);
-      }
-
-      glassEls.push({ tint: tint, zone: zone, base: base, sheen: sheen });
+      var sheen = base.cloneNode(false);
+      sheen.removeAttribute("class");
+      sheen.setAttribute("fill", "url(#tselSheen)");
+      sheen.style.pointerEvents = "none";
+      tint.parentNode.insertBefore(sheen, tint.nextSibling);
+      glassEls.push({ base: base, tint: tint, sheen: sheen, zone: zone, poly: null });
     });
-
-    // Sun-visor strip = top band of the windshield, computed from its bbox
     var ws = glassEls.filter(function (g) { return g.zone === "windshield"; })[0];
     if (ws) {
       try {
         var b = ws.base.getBBox();
         strip = document.createElementNS(svgNS, "rect");
-        strip.setAttribute("x", b.x);
-        strip.setAttribute("y", b.y);
-        strip.setAttribute("width", b.width);
-        strip.setAttribute("height", Math.max(8, b.height * 0.28));
-        strip.setAttribute("fill", "#080a0e");
-        strip.setAttribute("fill-opacity", "0");
+        strip.setAttribute("x", b.x); strip.setAttribute("y", b.y);
+        strip.setAttribute("width", b.width); strip.setAttribute("height", Math.max(8, b.height * 0.28));
+        strip.setAttribute("fill", "#080a0e"); strip.setAttribute("fill-opacity", "0");
         strip.style.pointerEvents = "none";
-        (ws.sheen || ws.tint).parentNode.insertBefore(strip, (ws.sheen || ws.tint).nextSibling);
-      } catch (e) { /* getBBox needs layout — ignore */ }
+        ws.sheen.parentNode.insertBefore(strip, ws.sheen.nextSibling);
+      } catch (e) {}
     }
-
     applyTint();
-    if (ALIGN) renderAlign(svg);
   }
 
   function applyTint() {
@@ -395,7 +452,7 @@
   }
 
   /* =========================================================================
-     5) CONTROLS
+     6) CONTROLS
      ========================================================================= */
   function buildVehicles() {
     var wrap = document.getElementById("tselVehicles");
@@ -405,11 +462,7 @@
       b.type = "button";
       b.className = "tsel-vbtn" + (i === state.v ? " tsel-on" : "");
       b.textContent = v.name;
-      b.addEventListener("click", function () {
-        state.v = i;
-        buildVehicles();
-        renderVehicle();
-      });
+      b.addEventListener("click", function () { state.v = i; buildVehicles(); renderVehicle(); });
       wrap.appendChild(b);
     });
   }
@@ -427,8 +480,7 @@
         p.textContent = pad(vlt);
         p.addEventListener("click", function () {
           state.zones[zone] = (state.zones[zone] === vlt) ? null : vlt; // click again = factory
-          buildPills();
-          applyTint();
+          buildPills(); applyTint();
         });
         row.appendChild(p);
       });
@@ -436,10 +488,9 @@
   }
 
   /* =========================================================================
-     6) SUMMARY + CTA
+     7) SUMMARY + CTA
      ========================================================================= */
   function label(vlt) { return vlt == null ? "Factory" : pad(vlt) + "%"; }
-
   function renderSummary() {
     var v = VEHICLES[state.v];
     var chips = [
@@ -451,32 +502,23 @@
     document.getElementById("tselChips").innerHTML = chips.map(function (c) {
       return '<span class="tsel-chip">' + c[0] + ': <b>' + c[1] + '</b></span>';
     }).join("");
-
     var cta = document.getElementById("tselCta");
     if (CONFIG.ctaUrl) {
       var q = new URLSearchParams({
-        vehicle: v.name,
-        front: label(state.zones.front),
-        rear: label(state.zones.rear),
+        vehicle: v.name, front: label(state.zones.front), rear: label(state.zones.rear),
         windshield: state.visor ? "Visor strip" : label(state.zones.windshield)
       });
       cta.href = CONFIG.ctaUrl + (CONFIG.ctaUrl.indexOf("?") > -1 ? "&" : "?") + q.toString();
-    } else if (CONFIG.phone) {
-      cta.href = "tel:" + CONFIG.phone.replace(/[^0-9+]/g, "");
-    } else {
-      cta.href = "#";
-    }
+    } else if (CONFIG.phone) { cta.href = "tel:" + CONFIG.phone.replace(/[^0-9+]/g, ""); }
+    else { cta.href = "#"; }
   }
 
   document.getElementById("tselVisor").addEventListener("change", function (e) {
-    state.visor = e.target.checked;
-    applyTint();
+    state.visor = e.target.checked; applyTint();
   });
 
   /* =========================================================================
-     7) ALIGNMENT EDITOR  (open the tool with ?align=1)
-        Lets you drag the window outlines onto a real photo and copy the
-        resulting coordinates. Photo vehicles only.
+     8) ALIGNMENT EDITOR (open the tool with ?align=1). Photo vehicles only.
      ========================================================================= */
   var alignZone = "front";
   var addMode = false;
@@ -487,35 +529,19 @@
     box.className = "tsel-align";
     box.innerHTML =
       '<h3>Alignment mode</h3>' +
-      '<p>Pick a window, then <b>drag the dots</b> to hug the glass. Use <b>Add point</b> then click the photo to add a corner.</p>' +
-      '<div class="zbtns">' +
-        '<button data-z="front">Front</button>' +
-        '<button data-z="rear">Back</button>' +
-        '<button data-z="windshield">Windshield</button>' +
-      '</div>' +
-      '<div class="abtns">' +
-        '<button id="alAdd">Add point</button>' +
-        '<button id="alUndo">Undo point</button>' +
-        '<button id="alClear">Clear window</button>' +
-        '<button id="alCopy">Copy zones</button>' +
-      '</div>' +
+      '<p>Pick a window, then <b>drag the dots</b> to hug the glass. <b>Add point</b> then click the photo to add a corner.</p>' +
+      '<div class="zbtns"><button data-z="front">Front</button><button data-z="rear">Back</button><button data-z="windshield">Windshield</button></div>' +
+      '<div class="abtns"><button id="alAdd">Add point</button><button id="alUndo">Undo point</button><button id="alClear">Clear window</button><button id="alCopy">Copy zones</button></div>' +
       '<textarea id="alOut" readonly></textarea>' +
-      '<p>Copy the box above and send it to me, or paste it into the vehicle\'s <code>zones</code>.</p>';
+      '<p>Copy the box and send it to me, or paste it into the vehicle\'s <code>zones</code>.</p>';
     document.body.appendChild(box);
-
     box.querySelectorAll(".zbtns button").forEach(function (b) {
-      b.addEventListener("click", function () { alignZone = b.getAttribute("data-z"); addMode = false; refreshAlignUI(); renderVehicle(); });
+      b.addEventListener("click", function () { alignZone = b.getAttribute("data-z"); addMode = false; syncPhotoGeometry(); });
     });
-    box.querySelector("#alAdd").addEventListener("click", function () { addMode = !addMode; refreshAlignUI(); });
-    box.querySelector("#alUndo").addEventListener("click", function () {
-      var poly = curPoly(); if (poly && poly.length) { poly.pop(); renderVehicle(); }
-    });
-    box.querySelector("#alClear").addEventListener("click", function () {
-      var v = VEHICLES[state.v]; if (v.zones) { v.zones[alignZone] = [[]]; renderVehicle(); }
-    });
-    box.querySelector("#alCopy").addEventListener("click", function () {
-      var t = document.getElementById("alOut"); t.select(); document.execCommand("copy");
-    });
+    box.querySelector("#alAdd").addEventListener("click", function () { addMode = !addMode; refreshAlignUI(); wireAlignClicks(stage().querySelector("svg")); });
+    box.querySelector("#alUndo").addEventListener("click", function () { var p = curPoly(); if (p && p.length) { p.pop(); syncPhotoGeometry(); } });
+    box.querySelector("#alClear").addEventListener("click", function () { var v = VEHICLES[state.v]; if (v.zones) { v.zones[alignZone] = [[]]; renderVehicle(); } });
+    box.querySelector("#alCopy").addEventListener("click", function () { var t = document.getElementById("alOut"); t.select(); try { document.execCommand("copy"); } catch (e) {} });
     refreshAlignUI();
   }
 
@@ -526,7 +552,7 @@
     var add = document.getElementById("alAdd");
     if (add) { add.textContent = addMode ? "Click photo…" : "Add point"; add.style.background = addMode ? "var(--tsel-accent)" : ""; }
     var out = document.getElementById("alOut");
-    if (out) out.value = JSON.stringify(VEHICLES[state.v].zones, null, 1);
+    if (out) out.value = JSON.stringify(VEHICLES[state.v].zones);
   }
 
   function curPoly() {
@@ -536,60 +562,58 @@
     return v.zones[alignZone][0];
   }
 
-  function svgPoint(svg, evt) {
+  function svgFrac(svg, evt) {
     var pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
     var m = svg.getScreenCTM(); if (!m) return null;
     var p = pt.matrixTransform(m.inverse());
-    return [Math.round(p.x), Math.round(p.y)];
+    return [ +(p.x / state.imgW).toFixed(4), +(p.y / state.imgH).toFixed(4) ];
   }
 
-  function renderAlign(svg) {
-    var v = VEHICLES[state.v];
-    if (!v.zones) { buildAlignPanel(); return; } // illustrations: nothing to align
-    buildAlignPanel();
-
+  function drawAlignLayer(svg) {
+    var old = svg.querySelector("#tselAlignLayer"); if (old) old.remove();
+    var v = VEHICLES[state.v]; if (!v.zones) return;
+    var W = state.imgW, H = state.imgH;
     var colors = { front: "#ff5a1f", rear: "#22c55e", windshield: "#38bdf8" };
-    var layer = document.createElementNS(svgNS, "g");
+    var layer = document.createElementNS(svgNS, "g"); layer.setAttribute("id", "tselAlignLayer");
     ["front", "rear", "windshield"].forEach(function (z) {
       (v.zones[z] || []).forEach(function (poly) {
         if (poly.length > 1) {
           var pg = document.createElementNS(svgNS, "polygon");
-          pg.setAttribute("points", ptsStr(poly));
+          pg.setAttribute("points", fracPts(poly, W, H));
           pg.setAttribute("fill", colors[z] + (z === alignZone ? "44" : "22"));
-          pg.setAttribute("stroke", colors[z]);
-          pg.setAttribute("stroke-width", "2");
+          pg.setAttribute("stroke", colors[z]); pg.setAttribute("stroke-width", Math.max(1, W / 500));
           layer.appendChild(pg);
         }
       });
     });
-    // draggable vertices for the current zone's polygon
-    var poly = curPoly();
-    poly.forEach(function (pt, idx) {
+    var poly = curPoly(); var r = Math.max(5, W / 160);
+    poly.forEach(function (pt, i) {
       var c = document.createElementNS(svgNS, "circle");
-      c.setAttribute("cx", pt[0]); c.setAttribute("cy", pt[1]); c.setAttribute("r", 9);
-      c.setAttribute("fill", "#fff"); c.setAttribute("stroke", colors[alignZone]); c.setAttribute("stroke-width", "3");
+      c.setAttribute("cx", pt[0] * W); c.setAttribute("cy", pt[1] * H); c.setAttribute("r", r);
+      c.setAttribute("fill", "#fff"); c.setAttribute("stroke", colors[alignZone]); c.setAttribute("stroke-width", r / 3);
       c.style.cursor = "grab";
       c.addEventListener("pointerdown", function (e) {
         e.preventDefault(); c.setPointerCapture(e.pointerId);
-        function move(ev) { var p = svgPoint(svg, ev); if (p) { poly[idx] = p; renderVehicle(); } }
-        function up(ev) { c.releasePointerCapture(e.pointerId); svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); }
+        function move(ev) { var f = svgFrac(svg, ev); if (f) { poly[i] = f; syncPhotoGeometry(); } }
+        function up() { try { c.releasePointerCapture(e.pointerId); } catch (x) {} svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); }
         svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up);
       });
       layer.appendChild(c);
     });
     svg.appendChild(layer);
+  }
 
+  function wireAlignClicks(svg) {
+    if (!svg) return;
     svg.style.cursor = addMode ? "crosshair" : "default";
     svg.onclick = function (e) {
-      if (!addMode) return;
-      if (e.target.tagName === "circle") return;
-      var p = svgPoint(svg, e); if (p) { curPoly().push(p); renderVehicle(); }
+      if (!addMode || e.target.tagName === "circle") return;
+      var f = svgFrac(svg, e); if (f) { curPoly().push(f); syncPhotoGeometry(); }
     };
-    refreshAlignUI();
   }
 
   /* =========================================================================
-     8) INIT
+     9) INIT
      ========================================================================= */
   buildVehicles();
   buildPills();
