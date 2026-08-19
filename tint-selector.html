@@ -184,11 +184,12 @@
   var VEHICLE = {
     name: "BMW 6 Series",
     image: "https://tru-tints.com/wp-content/uploads/2026/08/chapay-sport-2746332-scaled.png",
-    // Starting estimates — refine with ?align=1 so they hug the real glass.
+    // Aligned to the real photo. Add more polygons (or align rear/windshield)
+    // any time with ?align=1.
     zones: {
-      front:      [ [[0.535,0.260],[0.660,0.250],[0.660,0.345],[0.550,0.350]] ],
-      rear:       [ [[0.675,0.255],[0.745,0.265],[0.735,0.345],[0.675,0.345]] ],
-      windshield: [ [[0.440,0.440],[0.515,0.255],[0.550,0.275],[0.485,0.450]] ]
+      front:      [ [[0.6243,0.2171],[0.7326,0.207],[0.8351,0.3036],[0.5508,0.3696]] ],
+      rear:       [],
+      windshield: []
     }
   };
 
