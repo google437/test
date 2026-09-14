@@ -113,7 +113,7 @@
   <div class="tsel-head">
     <div>
       <h1 id="tselShop">Window Tint Selector</h1>
-      <p class="tsel-sub">Pick a vehicle, angle, and tint shade for each set of windows.</p>
+      <p class="tsel-sub">Pick a vehicle and a tint shade for each set of windows.</p>
     </div>
     <a class="tsel-phone" id="tselPhone" href="#" style="display:none;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1l-2.3 2.2z"/></svg>
@@ -199,7 +199,7 @@
 
   var VEHICLES = [
     {
-      type: "BMW 6 Series",           // the "sample vehicle" — 4 angles
+      type: "BMW 6 Series",
       angles: [
         {
           name: "Side",
@@ -209,50 +209,23 @@
             rear:       [],
             windshield: []
           }
-        },
-        { name: "Front 3/4", image: "", zones: emptyZones() },
-        { name: "Rear 3/4",  image: "", zones: emptyZones() },
-        { name: "Rear",      image: "", zones: emptyZones() }
+        }
+      ]
+    },
+    {
+      type: "SUV",
+      angles: [
+        // Window regions awaiting alignment — open ?align=1, drag the outlines, send me the coords.
+        { name: "Side", image: "https://tru-tints.com/wp-content/uploads/2026/09/Gemini_Generated_Image_9fwpb69fwpb69fwp.jpg", zones: emptyZones() }
+      ]
+    },
+    {
+      type: "Truck",
+      angles: [
+        { name: "Side", image: "https://tru-tints.com/wp-content/uploads/2026/09/Gemini_Generated_Image_gvxaxkgvxaxkgvxa.jpg", zones: emptyZones() }
       ]
     }
-    // Two more car types are added below (illustrated stand-ins until photos arrive).
   ];
-
-  /* Built-in illustrated cars (act as the other two "types" and demonstrate
-     per-window tinting immediately; swap for real photos when ready). */
-  function wheels(x1, x2) {
-    return '<g fill="#1a1d22"><circle cx="'+x1+'" cy="388" r="66"/><circle cx="'+x2+'" cy="388" r="66"/></g>'
-         + '<g fill="#3a3f47"><circle cx="'+x1+'" cy="388" r="40"/><circle cx="'+x2+'" cy="388" r="40"/></g>'
-         + '<g fill="#c9ced6"><circle cx="'+x1+'" cy="388" r="15"/><circle cx="'+x2+'" cy="388" r="15"/></g>';
-  }
-  function artAngle(bodyColor, body, glass) {
-    return {
-      name: "Profile", viewBox: "0 0 1040 480", bodyColor: bodyColor,
-      art: '<ellipse cx="520" cy="440" rx="430" ry="26" fill="#00000018"/>'
-         + '<path class="tsel-body" d="' + body + '"/>'
-         + '<path d="' + body + '" fill="none" stroke="#00000018" stroke-width="2"/>'
-         + wheels.apply(null, glass.wheels) + glass.shapes
-    };
-  }
-  VEHICLES.push(
-    { type: "SUV", angles: [ artAngle("#20242b",
-      "M60,374 L60,314 Q66,296 88,292 L236,270 Q286,264 314,232 L372,150 Q380,140 398,138 L742,138 "+
-      "Q772,140 786,158 L860,244 L946,258 Q972,262 976,292 L978,374 Q978,394 958,394 L80,394 Q60,394 60,374 Z",
-      { wheels:[238,812], shapes:
-        '<path class="tsel-glass" data-zone="windshield" d="M334,222 L388,152 L452,152 L452,222 Z"/>'+
-        '<rect class="tsel-glass" data-zone="front" x="462" y="150" width="92" height="74" rx="8"/>'+
-        '<rect class="tsel-glass" data-zone="rear"  x="564" y="150" width="92" height="74" rx="8"/>'+
-        '<path class="tsel-glass" data-zone="rear" d="M666,150 L748,150 Q772,152 782,166 L816,222 L666,222 Z"/>'
-      }) ] },
-    { type: "Truck", angles: [ artAngle("#1f4e86",
-      "M56,376 L56,318 Q62,300 84,296 L214,272 Q262,266 290,236 L346,152 Q354,142 372,140 L556,140 "+
-      "Q576,142 580,162 L580,300 L980,300 L980,376 Q980,396 960,396 L76,396 Q56,396 56,376 Z",
-      { wheels:[228,812], shapes:
-        '<rect x="588" y="150" width="392" height="150" rx="6" fill="#00000018"/>'+
-        '<path class="tsel-glass" data-zone="windshield" d="M312,224 L364,154 L430,154 L430,224 Z"/>'+
-        '<rect class="tsel-glass" data-zone="front" x="440" y="152" width="118" height="72" rx="8"/>'
-      }) ] }
-  );
 
   /* =========================================================================
      3) STATE + RENDER
