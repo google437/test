@@ -1,0 +1,617 @@
+<!-- Envision Plan Calculator :: DIRECT PASTE version for Duda HTML widget -->
+ <!-- Paste this entire block into the HTML widget's Content editor. -->
+ <style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+.ev-wrap{box-sizing:border-box;}
+.ev-wrap button{margin:0;font:inherit;color:inherit;background:none;border:0;text-align:inherit;line-height:normal;}
+.ev-wrap input{margin:0;font:inherit;line-height:normal;}
+.ev-wrap ul{margin:0;padding:0;list-style:none;}
+.ev-wrap li{margin:0;}
+.ev-wrap a{color:inherit;text-decoration:none;}
+.ev-wrap h1,.ev-wrap h2{margin:0;padding:0;}
+.ev-wrap img{max-width:none;}
+  .ev-wrap{
+    --blue:#0A6EB4; --sky:#14A0DC; --ink:#0D0D0D; --gray:#4A4A4A;
+    --light:#F5F7FA; --line:#E6ECF3; --save:#0EA371;
+    --shadow:0 1px 2px rgba(13,28,50,.04), 0 8px 24px rgba(10,110,180,.07);
+    --shadow-lg:0 18px 50px rgba(10,110,180,.16);
+    --r:16px;
+  }
+  .ev-wrap *{box-sizing:border-box;}
+  .ev-wrap{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 520px at 12% -8%, rgba(20,160,220,.14), transparent 60%),
+      radial-gradient(900px 520px at 108% 8%, rgba(10,110,180,.12), transparent 55%),
+      linear-gradient(180deg,#fbfdff 0%, #f3f7fb 100%);
+    min-height:100%;
+    padding:clamp(16px,3vw,40px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .ev-wrap .ev-shell{max-width:1080px;margin:0 auto;}
+  .ev-wrap .ev-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+  .ev-wrap .ev-head img{height:38px;width:auto;display:block;}
+  .ev-wrap .ev-head .divider{width:1px;height:30px;background:var(--line);}
+  .ev-wrap .ev-head h1{
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:700;font-size:clamp(18px,2.4vw,23px);line-height:1.1;
+    margin:0;color:var(--ink);letter-spacing:-.02em;
+  }
+  .ev-wrap .ev-head p{margin:2px 0 0;color:var(--gray);font-size:13.5px;}
+  .ev-wrap .ev-grid{display:grid;grid-template-columns:1fr;gap:22px;}
+  @media(min-width:900px){ .ev-wrap .ev-grid{grid-template-columns:1.55fr .95fr;align-items:start;} }
+  .ev-wrap .ev-panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;}
+  .ev-wrap .ev-sec{padding:18px clamp(16px,2.2vw,24px);}
+  .ev-wrap .ev-sec + .ev-sec{border-top:1px solid var(--line);}
+  .ev-wrap .ev-sec h2{
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:600;
+    font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--blue);
+    margin:0 0 14px;display:flex;align-items:center;gap:9px;
+  }
+  .ev-wrap .ev-sec h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--sky);box-shadow:0 0 0 4px rgba(20,160,220,.15);}
+  .ev-wrap .ev-opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(218px,1fr));gap:10px;}
+  .ev-wrap .opt{
+    position:relative;text-align:left;cursor:pointer;border:1.5px solid var(--line);
+    background:#fff;border-radius:13px;padding:13px 15px 13px 14px;
+    display:flex;flex-direction:column;gap:3px;transition:.18s ease;
+    font-family:inherit;color:inherit;
+  }
+  .ev-wrap .opt:hover{border-color:#bcd6ec;transform:translateY(-2px);box-shadow:0 6px 18px rgba(10,110,180,.10);}
+  .ev-wrap .opt:focus-visible{outline:3px solid rgba(20,160,220,.4);outline-offset:2px;}
+  .ev-wrap .opt .nm{font-weight:600;font-size:14.5px;line-height:1.2;padding-right:26px;}
+  .ev-wrap .opt .sb{font-size:10.5px;color:var(--gray);line-height:1.25;font-weight:700;letter-spacing:.03em;text-transform:uppercase;}
+  .ev-wrap .opt .ds{font-size:12px;color:var(--gray);line-height:1.4;margin-top:3px;}
+  .ev-wrap .opt .pr{font-size:13px;font-weight:700;color:var(--blue);margin-top:auto;padding-top:10px;}
+  .ev-wrap .opt .pr span{font-weight:500;color:var(--gray);font-size:11px;}
+  .ev-wrap .opt .tick{
+    position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;
+    border:1.5px solid var(--line);display:grid;place-items:center;transition:.18s ease;
+  }
+  .ev-wrap .opt .tick svg{width:11px;height:11px;opacity:0;transform:scale(.5);transition:.18s ease;stroke:#fff;}
+  .ev-wrap .opt[aria-pressed="true"]{
+    border-color:var(--blue);
+    background:linear-gradient(180deg,#f3f9ff,#eef6fe);
+    box-shadow:inset 0 0 0 1px rgba(10,110,180,.25);
+  }
+  .ev-wrap .opt[aria-pressed="true"] .tick{background:var(--blue);border-color:var(--blue);}
+  .ev-wrap .opt[aria-pressed="true"] .tick svg{opacity:1;transform:scale(1);}
+  .ev-wrap .seo-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  @media(max-width:520px){ .ev-wrap .seo-row{grid-template-columns:1fr;} }
+  .ev-wrap .seo{
+    cursor:pointer;border:1.5px solid var(--line);background:#fff;border-radius:13px;
+    padding:14px;text-align:center;transition:.18s ease;font-family:inherit;color:inherit;
+    display:flex;flex-direction:column;gap:3px;align-items:center;
+  }
+  .ev-wrap .seo:hover{border-color:#bcd6ec;transform:translateY(-2px);}
+  .ev-wrap .seo:focus-visible{outline:3px solid rgba(20,160,220,.4);outline-offset:2px;}
+  .ev-wrap .seo .nm{font-weight:700;font-size:15px;}
+  .ev-wrap .seo .ds{font-size:11.5px;color:var(--gray);line-height:1.35;margin:3px 0 5px;}
+  .ev-wrap .seo .pr{font-size:15px;font-weight:800;color:var(--blue);font-family:'Bricolage Grotesque',sans-serif;margin-top:auto;}
+  .ev-wrap .seo .pr span{font-weight:500;color:var(--gray);font-size:11px;}
+  .ev-wrap .seo[aria-pressed="true"]{border-color:var(--blue);background:linear-gradient(180deg,#f3f9ff,#eef6fe);box-shadow:inset 0 0 0 1px rgba(10,110,180,.25);}
+  .ev-wrap .summary{position:relative;}
+  @media(min-width:900px){ .ev-wrap .summary{position:sticky;top:20px;} }
+  .ev-wrap .sum-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-lg);overflow:hidden;}
+  .ev-wrap .sum-top{background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;padding:20px 22px 22px;}
+  .ev-wrap .sum-top .lab{font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.92;font-weight:600;}
+  .ev-wrap .sum-total{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(34px,6vw,46px);line-height:1;letter-spacing:-.02em;margin-top:6px;display:flex;align-items:baseline;gap:6px;}
+  .ev-wrap .sum-total .per{font-size:15px;font-weight:600;opacity:.9;letter-spacing:0;}
+  .ev-wrap .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .ev-wrap .badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.35);padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;
+    transition:.25s ease;}
+  .ev-wrap .badge svg{width:13px;height:13px;flex:0 0 auto;}
+  .ev-wrap .badge.hide{display:none;}
+  .ev-wrap .badge.pop{animation:pop .4s ease;}
+  @keyframes pop{0%{transform:scale(.8)}55%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .ev-wrap .sum-body{padding:18px 22px 8px;}
+  .ev-wrap .nudge{display:flex;align-items:center;gap:12px;background:var(--light);border:1px solid var(--line);
+    border-radius:12px;padding:11px 13px;margin-bottom:16px;}
+  .ev-wrap .nudge .meter{flex:0 0 auto;width:42px;height:42px;position:relative;}
+  .ev-wrap .nudge .meter svg{transform:rotate(-90deg);}
+  .ev-wrap .nudge .meter .val{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--blue);}
+  .ev-wrap .nudge .txt{font-size:12.6px;color:var(--gray);line-height:1.32;font-weight:500;}
+  .ev-wrap .nudge .txt b{color:var(--ink);font-weight:700;}
+  .ev-wrap .lines{list-style:none;margin:0;padding:0;}
+  .ev-wrap .lines li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px;}
+  .ev-wrap .lines li .ln{color:var(--ink);font-weight:500;}
+  .ev-wrap .lines li .lp{color:var(--gray);font-weight:600;white-space:nowrap;}
+  .ev-wrap .empty{color:var(--gray);font-size:13px;padding:10px 0 4px;font-style:italic;}
+  .ev-wrap .totals{margin-top:6px;padding-top:12px;}
+  .ev-wrap .totals .row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;padding:5px 0;color:var(--gray);}
+  .ev-wrap .totals .row b{color:var(--ink);font-weight:700;}
+  .ev-wrap .totals .row.save{color:var(--save);font-weight:700;}
+  .ev-wrap .totals .row.grand{font-size:18px;color:var(--ink);font-weight:800;border-top:1.5px solid var(--line);margin-top:6px;padding-top:12px;font-family:'Bricolage Grotesque',sans-serif;}
+  .ev-wrap .totals .row.grand .gp{color:var(--blue);}
+  .ev-wrap .totals .row.setup{border-top:1px dashed var(--line);margin-top:6px;padding-top:11px;}
+  .ev-wrap .totals .row.setup .sv{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--ink);}
+  .ev-wrap .struck{color:var(--gray);text-decoration:line-through;text-decoration-thickness:1.5px;font-weight:600;}
+  .ev-wrap .waived-pill{background:rgba(14,163,113,.12);color:var(--save);font-size:10.5px;font-weight:800;
+    padding:3px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;}
+  .ev-wrap .cta{display:block;width:100%;text-align:center;margin:16px 0 6px;padding:14px;border-radius:12px;
+    background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;font-weight:700;font-size:15px;
+    text-decoration:none;border:0;cursor:pointer;font-family:inherit;transition:.18s ease;
+    box-shadow:0 8px 20px rgba(10,110,180,.28);}
+  .ev-wrap .cta:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(10,110,180,.34);}
+  .ev-wrap .cta:disabled, .ev-wrap .cta[aria-disabled="true"]{background:#cdd8e3;box-shadow:none;cursor:not-allowed;transform:none;}
+  .ev-wrap .cta.sending{opacity:.85;cursor:progress;}
+  .ev-wrap .lead{margin-top:14px;}
+  .ev-wrap .frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  @media(max-width:420px){ .ev-wrap .frow{grid-template-columns:1fr;} }
+  .ev-wrap .fin{width:100%;font-family:inherit;font-size:13.5px;color:var(--ink);background:#fff;
+    border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:8px;transition:.15s ease;}
+  .ev-wrap .frow .fin{margin-bottom:0;}
+  .ev-wrap .fin::placeholder{color:#9aa7b4;}
+  .ev-wrap .fin:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(20,160,220,.18);}
+  .ev-wrap .formmsg{font-size:12.5px;line-height:1.4;margin-top:8px;text-align:center;}
+  .ev-wrap .formmsg.ok{color:var(--save);font-weight:700;}
+  .ev-wrap .formmsg.err{color:#c0392b;font-weight:600;}
+  .ev-wrap .fine{color:var(--gray);font-size:11px;line-height:1.4;padding:4px 0 18px;text-align:center;}
+  .ev-wrap .reset{background:none;border:0;color:var(--gray);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;padding:4px;}
+  .ev-wrap .reset:hover{color:var(--blue);}
+  .ev-wrap .num{font-variant-numeric:tabular-nums;}
+  .ev-wrap .reveal{opacity:0;transform:translateY(10px);animation:rise .5s ease forwards;}
+  @keyframes rise{to{opacity:1;transform:none;}}
+ </style>
+ <div class="ev-wrap">
+  <div class="ev-shell">
+   <header class="ev-head reveal">
+    <img src="data:image/png;base64,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" alt="Envision Marketing">
+    <div class="divider">
+    </div>
+    <div>
+     <h1>
+      Build Your Marketing Plan
+     </h1>
+     <p>
+      Bundle 2 or more services to unlock discounts and waive your setup fee.
+     </p>
+    </div>
+   </header>
+   <div class="ev-grid">
+    <div class="ev-panel reveal" style="animation-delay:.05s">
+     <div class="ev-sec">
+      <h2>
+       <span class="dot">
+       </span>
+       Paid Search
+      </h2>
+      <div class="ev-opts" data-group="search">
+      </div>
+     </div>
+     <div class="ev-sec">
+      <h2>
+       <span class="dot">
+       </span>
+       Social &amp; Community
+      </h2>
+      <div class="ev-opts" data-group="social">
+      </div>
+     </div>
+     <div class="ev-sec">
+      <h2>
+       <span class="dot">
+       </span>
+       Video &amp; Programmatic
+      </h2>
+      <div class="ev-opts" data-group="programmatic">
+      </div>
+     </div>
+     <div class="ev-sec">
+      <h2>
+       <span class="dot">
+       </span>
+       Emerging Channels
+      </h2>
+      <div class="ev-opts" data-group="emerging">
+      </div>
+     </div>
+     <div class="ev-sec">
+      <h2>
+       <span class="dot">
+       </span>
+       SEO &nbsp;
+       <small style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--gray)">
+        (choose one)
+       </small>
+      </h2>
+      <div class="seo-row" data-group="seo">
+      </div>
+     </div>
+     <div class="ev-sec">
+      <h2>
+       <span class="dot">
+       </span>
+       Website
+      </h2>
+      <div class="ev-opts" data-group="web">
+      </div>
+     </div>
+    </div>
+    <div class="summary reveal" style="animation-delay:.1s">
+     <div class="sum-card">
+      <div class="sum-top">
+       <div class="lab">
+        Estimated Monthly Total
+       </div>
+       <div class="sum-total">
+        <span class="num" id="grandTop">
+         $0
+        </span>
+        <span class="per">
+         /mo
+        </span>
+       </div>
+       <div class="badges">
+        <div class="badge hide" id="badge">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5">
+          </path>
+         </svg>
+         <span id="badgeTxt">
+          15% bundle discount
+         </span>
+        </div>
+        <div class="badge hide" id="setupBadge">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5">
+          </path>
+         </svg>
+         <span>
+          $1,000 setup fee waived
+         </span>
+        </div>
+       </div>
+      </div>
+      <div class="sum-body">
+       <div class="nudge">
+        <div class="meter">
+         <svg width="42" height="42" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="17" fill="none" stroke="#E6ECF3" stroke-width="5">
+          </circle>
+          <circle id="meterArc" cx="21" cy="21" r="17" fill="none" stroke="#14A0DC" stroke-width="5" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="106.8">
+          </circle>
+         </svg>
+         <div class="val" id="meterVal">
+          0
+         </div>
+        </div>
+        <div class="txt" id="nudge">
+         Select
+         <b>
+          2 services
+         </b>
+         to unlock
+         <b>
+          15% off
+         </b>
+         and waive the
+         <b>
+          $1,000 setup fee
+         </b>
+         .
+        </div>
+       </div>
+       <ul class="lines" id="lines">
+       </ul>
+       <div class="empty" id="empty">
+        No services selected yet.
+       </div>
+       <div class="totals">
+        <div class="row" id="subRow">
+         <span>
+          Monthly subtotal
+         </span>
+         <b class="num" id="subVal">
+          $0
+         </b>
+        </div>
+        <div class="row save" id="saveRow" style="display:none">
+         <span id="saveLab">
+          Bundle discount
+         </span>
+         <b class="num" id="saveVal">
+          -$0
+         </b>
+        </div>
+        <div class="row grand">
+         <span>
+          Monthly total
+         </span>
+         <span class="gp num" id="grandBottom">
+          $0/mo
+         </span>
+        </div>
+        <div class="row setup">
+         <span>
+          Setup fee (one-time)
+         </span>
+         <span class="sv" id="setupVal">
+          $1,000
+         </span>
+        </div>
+       </div>
+       <div class="lead">
+        <div class="frow">
+         <input id="f-name" class="fin" type="text" placeholder="Full name" autocomplete="name">
+         <input id="f-email" class="fin" type="email" placeholder="Email address" autocomplete="email">
+        </div>
+        <input id="f-phone" class="fin" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+        <button class="cta" id="cta" type="button" disabled="">
+         Select services to continue
+        </button>
+        <div class="formmsg" id="formmsg" role="status" aria-live="polite">
+        </div>
+       </div>
+       <div class="fine" id="fine">
+        Estimated monthly management fees. Advertising spend is billed separately.
+        <br>
+        <button class="reset" id="reset" type="button">
+         Clear selection
+        </button>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+ <script>
+  (function(){
+  "use strict";
+  /* ====== CONFIG (edit these) ====================================== */
+  var FORM_ENDPOINT = "https://script.google.com/macros/s/AKfycbw5FprMXDIlSCEJWfK60Nrb7fsKqajbW_I1sA98X7setOf5isu0ei0NVL59JCQ69ilu3A/exec";   // Google Apps Script web app. Empty = mailto fallback.
+  var FROM_EMAIL    = "noreply@envisionmktg.com";  // sender (must be configured on your backend)
+  var TO_EMAIL      = "team@envisionmktg.com";      // where lead requests are delivered
+  var CURRENCY   = "$";
+  var SETUP_FEE  = 1000;   // one-time setup fee
+  var BUNDLE_MIN = 2;      // services needed to be "bundled" (waives setup fee)
+  /* ================================================================= */
+  var SERVICES = [
+    {id:"google",   g:"search",        nm:"Google Ads",                 sb:"Paid Search",                  pr:750},
+    {id:"bing",     g:"search",        nm:"Microsoft / Bing Ads",       sb:"Paid Search",                  pr:750},
+    {id:"apple",    g:"search",        nm:"Apple Ads",                  sb:"Paid Search",                  pr:750},
+    {id:"meta",     g:"social",        nm:"Meta",                       sb:"Facebook & Instagram",         pr:750},
+    {id:"linkedin", g:"social",        nm:"LinkedIn Ads",               sb:"Professional Social",          pr:750},
+    {id:"pinterest",g:"social",        nm:"Pinterest Ads",              sb:"Visual Discovery",             pr:750},
+    {id:"reddit",   g:"social",        nm:"Reddit Ads",                 sb:"Niche & Community",            pr:750},
+    {id:"snapchat", g:"social",        nm:"Snapchat Ads",               sb:"AR & Gen Z",                   pr:750},
+    {id:"tiktok",   g:"social",        nm:"TikTok Ads",                 sb:"Short-Form Content",           pr:750},
+    {id:"x",        g:"social",        nm:"X / Twitter Ads",            sb:"Real-Time Engagement",         pr:750},
+    {id:"youtube",  g:"programmatic",  nm:"YouTube Ads",                sb:"Video",                        pr:750},
+    {id:"ctv",      g:"programmatic",  nm:"Connected TV (CTV)",         sb:"Programmatic",                 pr:750},
+    {id:"preroll",  g:"programmatic",  nm:"Video Pre-Roll",             sb:"Programmatic",                 pr:750},
+    {id:"display",  g:"programmatic",  nm:"Display",                    sb:"Programmatic",                 pr:750},
+    {id:"dooh",     g:"programmatic",  nm:"Digital Out-Of-Home",        sb:"DOOH",                         pr:750},
+    {id:"audio",    g:"programmatic",  nm:"Digital Audio",              sb:"Podcasts, Spotify, Pandora",   pr:750},
+    {id:"aisearch", g:"emerging",      nm:"AI Search & Conversational", sb:"ChatGPT & Perplexity",         pr:750},
+    {id:"maint",    g:"web",           nm:"Website Maintenance",        sb:"Ongoing care & updates",       pr:350}
+  ];
+  var SEO = [
+    {id:"seo-premium",   nm:"Premium",    pr:1699},
+    {id:"seo-ultimate",  nm:"Ultimate",   pr:2299},
+    {id:"seo-enterprise",nm:"Enterprise", pr:2799}
+  ];
+  var SEO_IDS = SEO.map(function(s){return s.id;});
+  // short "what you get" summaries shown on each card (edit freely)
+  var DS = {
+    google:"Premium placement at the top of Google results, capturing buyers the moment they search.",
+    bing:"Search ads across Bing and the Microsoft network, often at a lower cost per click.",
+    apple:"Reach high-intent Apple users with search ads across the App Store and Apple's search network.",
+    meta:"Scroll-stopping Facebook and Instagram campaigns built to drive leads and sales.",
+    linkedin:"Reach B2B decision makers by job title, industry, and company size.",
+    pinterest:"Get in front of shoppers while they plan purchases and discover ideas.",
+    reddit:"Native ads placed inside the niche communities your audience already trusts.",
+    snapchat:"Full-screen vertical and AR ads that connect with younger, mobile-first audiences.",
+    tiktok:"Trend-driven short video ads designed to stop the scroll and spark shares.",
+    x:"Put your brand inside real-time conversations and trending moments.",
+    youtube:"Video ads that build awareness on the world's largest video platform.",
+    ctv:"Non-skippable ads on streaming TV and smart-TV apps, reaching cord-cutters.",
+    preroll:"Short video ads that play before content on premium publisher sites.",
+    display:"Banner and rich-media ads that retarget your visitors across millions of sites.",
+    dooh:"Your message on digital billboards and screens in high-traffic locations.",
+    audio:"Audio ads inside podcasts and streaming services like Spotify and Pandora.",
+    aisearch:"Show up when people ask AI tools like ChatGPT and Perplexity for recommendations.",
+    maint:"Ongoing updates, security, backups, and fixes that keep your site fast and safe.",
+    "seo-premium":"Core on-page optimization and steady monthly content to build rankings.",
+    "seo-ultimate":"More content, deeper technical SEO, and active link building to accelerate growth.",
+    "seo-enterprise":"Our most aggressive SEO for competitive markets that demand fast results."
+  };
+  // discount by number of selected services
+  function discountFor(n){
+    if(n>=5) return .30;
+    if(n===4) return .25;
+    if(n===3) return .20;
+    if(n===2) return .15;
+    return 0;
+  }
+  var PRICE = {}, NAME = {};
+  SERVICES.forEach(function(s){PRICE[s.id]=s.pr; NAME[s.id]=s.nm;});
+  SEO.forEach(function(s){PRICE[s.id]=s.pr; NAME[s.id]="SEO "+s.nm;});
+  var selected = new Set();
+  var current = {};
+  function money(n){ return CURRENCY + Math.round(n).toLocaleString("en-US"); }
+  function tick(){
+    return '<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>';
+  }
+  SERVICES.forEach(function(s){
+    var box = document.querySelector('.ev-opts[data-group="'+s.g+'"]');
+    var b = document.createElement("button");
+    b.type="button"; b.className="opt"; b.setAttribute("aria-pressed","false"); b.dataset.id=s.id;
+    b.innerHTML = tick()
+      + '<span class="nm">'+s.nm+'</span>'
+      + '<span class="sb">'+s.sb+'</span>'
+      + '<span class="ds">'+DS[s.id]+'</span>'
+      + '<span class="pr">'+money(s.pr)+' <span>/mo</span></span>';
+    b.addEventListener("click", function(){ toggle(s.id); });
+    box.appendChild(b);
+  });
+  var seoBox = document.querySelector('[data-group="seo"]');
+  SEO.forEach(function(s){
+    var b = document.createElement("button");
+    b.type="button"; b.className="seo"; b.setAttribute("aria-pressed","false"); b.dataset.id=s.id;
+    b.innerHTML = '<span class="nm">'+s.nm+'</span><span class="ds">'+DS[s.id]+'</span><span class="pr">'+money(s.pr)+' <span>/mo</span></span>';
+    b.addEventListener("click", function(){ toggleSeo(s.id); });
+    seoBox.appendChild(b);
+  });
+  function toggle(id){ if(selected.has(id)) selected.delete(id); else selected.add(id); render(); }
+  function toggleSeo(id){
+    if(selected.has(id)){ selected.delete(id); }
+    else { SEO_IDS.forEach(function(x){selected.delete(x);}); selected.add(id); }
+    render();
+  }
+  function tween(el, to){
+    var from = parseFloat(el.dataset.v||"0"); el.dataset.v = to;
+    var t0=null, dur=420;
+    function step(t){
+      if(!t0) t0=t; var p=Math.min((t-t0)/dur,1);
+      var e = 1-Math.pow(1-p,3);
+      var v = from+(to-from)*e;
+      el.textContent = el.dataset.suffix ? money(v)+el.dataset.suffix : money(v);
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var ARC = 2*Math.PI*17;
+  var prevPct = -1;
+  function render(){
+    document.querySelectorAll(".opt,.seo").forEach(function(b){
+      b.setAttribute("aria-pressed", selected.has(b.dataset.id) ? "true":"false");
+    });
+    var orderAll = SERVICES.map(function(s){return s.id;}).concat(SEO_IDS);
+    var ids = orderAll.filter(function(id){return selected.has(id);});
+    var count = ids.length;
+    var subtotal = ids.reduce(function(a,id){return a+PRICE[id];},0);
+    var pct = discountFor(count);
+    var save = subtotal*pct;
+    var total = subtotal-save;
+    var bundled = count>=BUNDLE_MIN;
+    var ul = document.getElementById("lines");
+    var empty = document.getElementById("empty");
+    ul.innerHTML="";
+    if(count===0){ empty.style.display="block"; }
+    else{
+      empty.style.display="none";
+      ids.forEach(function(id){
+        var li=document.createElement("li");
+        li.innerHTML='<span class="ln">'+NAME[id]+'</span><span class="lp">'+money(PRICE[id])+'/mo</span>';
+        ul.appendChild(li);
+      });
+    }
+    tween(document.getElementById("grandTop"), total);
+    var gb=document.getElementById("grandBottom"); gb.dataset.suffix="/mo"; tween(gb,total);
+    tween(document.getElementById("subVal"), subtotal);
+    var saveRow=document.getElementById("saveRow");
+    if(pct>0){
+      saveRow.style.display="flex";
+      document.getElementById("saveLab").textContent="Bundle discount ("+Math.round(pct*100)+"%)";
+      document.getElementById("saveVal").textContent="-"+money(save);
+    } else { saveRow.style.display="none"; }
+    // setup fee row: struck + waived once bundled
+    var setupVal=document.getElementById("setupVal");
+    if(bundled){
+      setupVal.innerHTML='<span class="struck">'+money(SETUP_FEE)+'</span><span class="waived-pill">Waived</span>';
+    } else {
+      setupVal.innerHTML=money(SETUP_FEE);
+    }
+    // discount badge
+    var badge=document.getElementById("badge");
+    if(pct>0){
+      document.getElementById("badgeTxt").textContent=Math.round(pct*100)+"% bundle discount applied";
+      badge.classList.remove("hide");
+      if(Math.round(pct*100)!==prevPct){ badge.classList.remove("pop"); void badge.offsetWidth; badge.classList.add("pop"); }
+    } else { badge.classList.add("hide"); }
+    prevPct=Math.round(pct*100);
+    // setup-waived badge
+    var setupBadge=document.getElementById("setupBadge");
+    if(bundled){ setupBadge.classList.remove("hide"); } else { setupBadge.classList.add("hide"); }
+    // nudge + meter (max tier reached at 5 services)
+    var arc=document.getElementById("meterArc");
+    document.getElementById("meterVal").textContent=count;
+    var fillUnits=Math.min(count,5)/5;
+    arc.style.transition="stroke-dashoffset .45s ease";
+    arc.style.strokeDashoffset=(ARC*(1-fillUnits)).toFixed(1);
+    var txt=document.getElementById("nudge");
+    if(count===0){ txt.innerHTML="Select <b>2 services</b> to unlock <b>15% off</b> and waive the <b>$1,000 setup fee</b>."; }
+    else if(count===1){ txt.innerHTML="Add <b>1 more service</b> to unlock <b>15% off</b> and waive your <b>$1,000 setup fee</b>."; }
+    else if(count===2){ txt.innerHTML="Setup fee waived. Add <b>1 more</b> to jump to <b>20% off</b>."; }
+    else if(count===3){ txt.innerHTML="Add <b>1 more service</b> to reach <b>25% off</b>."; }
+    else if(count===4){ txt.innerHTML="Add <b>1 more</b> to reach the maximum <b>30% off</b>."; }
+    else { txt.innerHTML="You have unlocked the maximum <b>30% bundle discount</b>."; }
+    current = {
+      names: ids.map(function(id){return NAME[id];}),
+      lines: ids.map(function(id){return {name:NAME[id], price:PRICE[id]};}),
+      count: count, subtotal: subtotal, pct: Math.round(pct*100),
+      discount: Math.round(save), monthly: Math.round(total),
+      setup: bundled ? 0 : SETUP_FEE, setupWaived: bundled
+    };
+    var cta=document.getElementById("cta");
+    if(count===0){
+      cta.disabled=true;
+      if(!cta.classList.contains("sending")) cta.textContent="Select services to continue";
+    } else {
+      cta.disabled=false;
+      if(!cta.classList.contains("sending")) cta.textContent="Send my custom quote";
+    }
+    try{ parent.postMessage({type:"envision-calc-height", height:document.documentElement.scrollHeight}, "*"); }catch(e){}
+  }
+  document.getElementById("reset").addEventListener("click", function(){ selected.clear(); setMsg(""); render(); });
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function setMsg(t,cls){ var m=document.getElementById("formmsg"); m.textContent=t||""; m.className="formmsg"+(cls?" "+cls:""); }
+  function planText(){
+    var l = current.lines.map(function(x){return "- "+x.name+": "+money(x.price)+"/mo";}).join("\n");
+    return "Selected services ("+current.count+"):\n"+l+"\n\n"
+      + "Monthly subtotal: "+money(current.subtotal)+"\n"
+      + (current.pct>0 ? "Bundle discount ("+current.pct+"%): -"+money(current.discount)+"\n" : "")
+      + "Monthly total: "+money(current.monthly)+"/mo\n"
+      + "Setup fee: "+(current.setupWaived ? "Waived (bundled)" : money(current.setup))+"\n";
+  }
+  function submit(){
+    var cta=document.getElementById("cta");
+    if(cta.disabled) return;
+    var name=(document.getElementById("f-name").value||"").trim();
+    var email=(document.getElementById("f-email").value||"").trim();
+    var phone=(document.getElementById("f-phone").value||"").trim();
+    if(!name){ setMsg("Please enter your name.","err"); return; }
+    if(!EMAIL_RE.test(email)){ setMsg("Please enter a valid email address.","err"); return; }
+    var payload = {
+      from: FROM_EMAIL,
+      to: TO_EMAIL,
+      subject: "New plan request from "+name,
+      name:name, email:email, phone:phone,
+      services: current.names,
+      serviceCount: current.count,
+      monthly: current.monthly,
+      discountPercent: current.pct,
+      discountAmount: current.discount,
+      setupFee: current.setup,
+      setupWaived: current.setupWaived,
+      summary: planText()
+    };
+    if(FORM_ENDPOINT){
+      cta.classList.add("sending"); cta.disabled=true; cta.textContent="Sending..."; setMsg("");
+      // Simple request (no custom headers) so Google Apps Script accepts it with no CORS preflight.
+      fetch(FORM_ENDPOINT, {
+        method:"POST",
+        mode:"no-cors",
+        body:JSON.stringify(payload)
+      }).then(function(){
+        cta.classList.remove("sending"); cta.textContent="Request sent";
+        setMsg("Thanks "+name+", your quote is on its way to our team. We will be in touch shortly.","ok");
+      }).catch(function(){
+        cta.classList.remove("sending"); cta.disabled=false; cta.textContent="Send my custom quote";
+        setMsg("Something went wrong sending your request. Please try again or email "+TO_EMAIL+".","err");
+      });
+    } else {
+      var subject="New plan request from "+name;
+      var body="Name: "+name+"\nEmail: "+email+"\nPhone: "+phone+"\n\n"+planText();
+      window.location.href="mailto:"+TO_EMAIL+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+      setMsg("Opening your email app addressed to our team.","ok");
+    }
+  }
+  document.getElementById("cta").addEventListener("click", submit);
+  render();
+  window.addEventListener("resize", function(){ render(); });
+})();
+ </script>
