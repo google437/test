@@ -125,14 +125,13 @@
   <div class="tsel-angles" id="tselAngles"></div>
 
   <div class="tsel-controls">
-    <div>
+    <div class="tsel-vblock">
       <h2 class="tsel-block-title">Vehicle Type</h2>
       <div class="tsel-vehicles" id="tselVehicles"></div>
     </div>
     <div>
       <h2 class="tsel-block-title">Window Tint</h2>
       <div class="tsel-row"><span class="tsel-rlabel">Front</span><div class="tsel-pills" data-zone="front"></div></div>
-      <div class="tsel-row"><span class="tsel-rlabel">Rear</span><div class="tsel-pills" data-zone="rear"></div></div>
       <div class="tsel-row"><span class="tsel-rlabel">Windshield</span><div class="tsel-pills" data-zone="windshield"></div></div>
       <button class="tsel-clear" id="tselClear" type="button">Reset to factory glass</button>
     </div>
@@ -210,19 +209,6 @@
             windshield: []
           }
         }
-      ]
-    },
-    {
-      type: "SUV",
-      angles: [
-        // Window regions awaiting alignment — open ?align=1, drag the outlines, send me the coords.
-        { name: "Side", image: "https://tru-tints.com/wp-content/uploads/2026/09/Gemini_Generated_Image_9fwpb69fwpb69fwp.jpg", zones: emptyZones() }
-      ]
-    },
-    {
-      type: "Truck",
-      angles: [
-        { name: "Side", image: "https://tru-tints.com/wp-content/uploads/2026/09/Gemini_Generated_Image_gvxaxkgvxaxkgvxa.jpg", zones: emptyZones() }
       ]
     }
   ];
@@ -331,6 +317,12 @@
      ========================================================================= */
   function buildVehicles() {
     var wrap = document.getElementById("tselVehicles"); wrap.innerHTML = "";
+    // With a single vehicle there's nothing to pick — hide the whole section.
+    var single = VEHICLES.length <= 1;
+    var block = wrap.closest(".tsel-vblock");
+    if (block) block.style.display = single ? "none" : "";
+    var controls = wrap.closest(".tsel-controls");
+    if (controls) controls.style.gridTemplateColumns = single ? "1fr" : "";
     VEHICLES.forEach(function (v, i) {
       var b = document.createElement("button"); b.type = "button";
       b.className = "tsel-vbtn" + (i === state.v ? " tsel-on" : "");
@@ -379,9 +371,7 @@
   function label(vlt) { return vlt == null ? "Factory" : pad(vlt) + "%"; }
   function renderSummary() {
     var chips = [
-      ["Vehicle", curVehicle().type],
       ["Front", label(state.zones.front)],
-      ["Rear", label(state.zones.rear)],
       ["Windshield", label(state.zones.windshield)]
     ];
     document.getElementById("tselChips").innerHTML = chips.map(function (c) {
@@ -389,7 +379,7 @@
     }).join("");
     var cta = document.getElementById("tselCta");
     if (CONFIG.ctaUrl) {
-      var q = new URLSearchParams({ vehicle: curVehicle().type, front: label(state.zones.front), rear: label(state.zones.rear), windshield: label(state.zones.windshield) });
+      var q = new URLSearchParams({ vehicle: curVehicle().type, front: label(state.zones.front), windshield: label(state.zones.windshield) });
       cta.href = CONFIG.ctaUrl + (CONFIG.ctaUrl.indexOf("?") > -1 ? "&" : "?") + q.toString();
     } else if (CONFIG.phone) { cta.href = "tel:" + CONFIG.phone.replace(/[^0-9+]/g, ""); }
     else { cta.href = "#"; }
