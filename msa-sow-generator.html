@@ -1,0 +1,774 @@
+<!-- ============================================================= -->
+<!-- ENVISION MARKETING: MSA + SOW CONTRACT GENERATOR               -->
+<!-- Duda HTML widget paste version.                                -->
+<!-- Paste this ENTIRE block into a Duda "HTML" / "Embed Code"      -->
+<!-- widget on a password-protected, hidden page.                   -->
+<!--                                                                -->
+<!-- Everything runs in the browser. Nothing is sent to a server;   -->
+<!-- the PDF is built locally with jsPDF and downloaded.            -->
+<!--                                                                -->
+<!-- To change contract wording, edit MSA_SECTIONS / SOW_TEXT in    -->
+<!-- the <script> below.                                            -->
+<!-- ============================================================= -->
+
+<style>
+  .emc {
+    --emc-blue: #0A6EB4;
+    --emc-sky: #14A0DC;
+    --emc-black: #0D0D0D;
+    --emc-gray: #4A4A4A;
+    --emc-light: #F5F7FA;
+    --emc-border: #dde3ea;
+    --emc-error: #b42318;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: var(--emc-black);
+    background: #fff;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 0 16px 32px;
+    box-sizing: border-box;
+    line-height: 1.4;
+    font-size: 15px;
+  }
+  .emc *, .emc *::before, .emc *::after { box-sizing: border-box; }
+  .emc-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    border-top: 4px solid var(--emc-blue);
+    padding: 18px 0 14px; border-bottom: 1px solid var(--emc-border); margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .emc-head img { width: 160px; height: auto; display: block; }
+  .emc-head h2 { margin: 0; font-size: 20px; color: var(--emc-blue); font-weight: 700; }
+  .emc-head p { margin: 2px 0 0; color: var(--emc-gray); font-size: 13px; }
+  .emc-card {
+    border: 1px solid var(--emc-border); border-radius: 8px; padding: 18px 18px 8px;
+    margin: 0 0 16px; background: #fff;
+  }
+  .emc-card > h3 {
+    margin: 0 0 14px; font-size: 15px; color: var(--emc-blue);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .emc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+  .emc-grid .emc-full { grid-column: 1 / -1; }
+  .emc-field { margin: 0 0 12px; }
+  .emc-field label, .emc-lbl {
+    display: block; font-size: 12px; font-weight: 700; color: var(--emc-gray);
+    text-transform: uppercase; letter-spacing: .03em; margin: 0 0 4px;
+  }
+  .emc input[type=text], .emc input[type=date], .emc input[type=number] {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--emc-border); border-radius: 6px;
+    font: inherit; font-size: 15px; color: var(--emc-black); background: #fff;
+  }
+  .emc input:focus { outline: 2px solid var(--emc-sky); outline-offset: 0; border-color: var(--emc-sky); }
+  .emc input:disabled { background: var(--emc-light); color: #9aa3ad; }
+  .emc .emc-req { color: var(--emc-error); }
+  .emc-hint { font-size: 12px; color: var(--emc-gray); margin: 4px 0 0; }
+  .emc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+  .emc-group-title {
+    font-size: 12px; font-weight: 700; color: #fff; background: var(--emc-blue);
+    padding: 6px 10px; border-radius: 4px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .emc-svc {
+    display: grid; grid-template-columns: 1fr 110px; gap: 8px; align-items: center;
+    padding: 6px 4px; border-bottom: 1px solid var(--emc-light);
+  }
+  .emc-svc label.emc-check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; flex-wrap: wrap; }
+  .emc-svc input[type=checkbox], .emc-check input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--emc-blue); flex: none; }
+  .emc-svc .emc-sub { flex: 1 1 120px; min-width: 100px; padding: 5px 8px !important; font-size: 13px !important; }
+  .emc-money { position: relative; }
+  .emc-money span { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--emc-gray); font-size: 14px; }
+  .emc-money input { padding-left: 20px !important; }
+  .emc-svc .emc-money input { padding: 6px 8px 6px 20px !important; font-size: 13px !important; text-align: right; }
+  .emc-check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; margin: 0 0 10px; }
+  .emc .emc-field label.emc-check { font-size: 14px; font-weight: 400; color: var(--emc-black); text-transform: none; letter-spacing: 0; margin: 0 0 10px; }
+  .emc-total {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: var(--emc-light); border-radius: 6px; padding: 10px 12px; margin: 10px 0 12px; font-size: 14px;
+  }
+  .emc-total strong { color: var(--emc-blue); font-size: 18px; }
+  .emc-actions {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    position: sticky; bottom: 0; background: #fff; padding: 12px 0; border-top: 1px solid var(--emc-border);
+  }
+  .emc-btn {
+    appearance: none; border: 1px solid var(--emc-blue); background: var(--emc-blue); color: #fff;
+    font: inherit; font-weight: 700; font-size: 14px; padding: 10px 16px; border-radius: 6px; cursor: pointer;
+  }
+  .emc-btn:hover { background: #085a93; }
+  .emc-btn.emc-ghost { background: #fff; color: var(--emc-blue); }
+  .emc-btn.emc-ghost:hover { background: var(--emc-light); }
+  .emc-btn.emc-danger { background: #fff; color: var(--emc-error); border-color: #e4b4ae; margin-left: auto; }
+  .emc-btn:disabled { opacity: .6; cursor: wait; }
+  .emc-select { padding: 9px 10px; border: 1px solid var(--emc-border); border-radius: 6px; font: inherit; font-size: 14px; background: #fff; }
+  .emc-errors {
+    display: none; border: 1px solid #f1c0ba; background: #fdf1ef; color: var(--emc-error);
+    border-radius: 6px; padding: 10px 14px; margin: 0 0 12px; font-size: 14px;
+  }
+  .emc-errors ul { margin: 4px 0 0 18px; padding: 0; }
+  .emc-status { font-size: 13px; color: var(--emc-gray); }
+  @media (max-width: 680px) {
+    .emc-grid, .emc-cols { grid-template-columns: 1fr; }
+    .emc-cols > div + div { margin-top: 12px; }
+    .emc-btn.emc-danger { margin-left: 0; }
+    .emc-actions { position: static; }
+  }
+</style>
+
+<div class="emc" id="emc-root">
+  <div class="emc-head">
+    <img data-emc-logo alt="Envision Marketing">
+    <div>
+      <h2>MSA + SOW Generator</h2>
+      <p>Fill out once, generate a signing-ready PDF for BoldSign.</p>
+    </div>
+  </div>
+
+  <!-- 1. CLIENT -->
+  <div class="emc-card">
+    <h3>1. Client Information</h3>
+    <div class="emc-grid">
+      <div class="emc-field"><label>Company name <span class="emc-req">*</span></label><input type="text" data-f="company" placeholder="XL Rez Residential Landscape"></div>
+      <div class="emc-field"><label>Website</label><input type="text" data-f="website" placeholder="xlrez.com"></div>
+      <div class="emc-field"><label>Client signer name <span class="emc-req">*</span></label><input type="text" data-f="contact" placeholder="Tony Garritano"></div>
+      <div class="emc-field"><label>Client signer title</label><input type="text" data-f="contactTitle" placeholder="Owner"></div>
+      <div class="emc-field"><label>Street address</label><input type="text" data-f="address1" placeholder="3639 W. Hacienda Ave"></div>
+      <div class="emc-field"><label>City, State ZIP</label><input type="text" data-f="address2" placeholder="Las Vegas, NV 89118"></div>
+    </div>
+  </div>
+
+  <!-- 2. DOMAINS -->
+  <div class="emc-card">
+    <h3>2. Domains</h3>
+    <div class="emc-grid">
+      <div class="emc-field"><label>Primary domain</label><input type="text" data-f="primaryDomain" placeholder="Defaults to the website"></div>
+      <div class="emc-field"><label>Additional domains / GBPs</label><input type="text" data-f="additionalDomains" placeholder="Optional"></div>
+    </div>
+  </div>
+
+  <!-- 3. SERVICES -->
+  <div class="emc-card">
+    <h3>3. Services Selected</h3>
+    <p class="emc-hint" style="margin:-6px 0 12px">Check every service included. Monthly amounts are optional: fill them in and they add up to the Monthly Service Fee below.</p>
+    <div class="emc-cols">
+      <div data-emc-group="seo"><div class="emc-group-title">SEO Services</div></div>
+      <div data-emc-group="ppc"><div class="emc-group-title">PPC Services</div></div>
+    </div>
+    <div class="emc-cols" style="margin-top:14px">
+      <div data-emc-group="custom"><div class="emc-group-title">Additional / Custom</div></div>
+    </div>
+    <div class="emc-total"><span>Line items total</span><strong data-emc-sum>$0.00</strong></div>
+    <label class="emc-check"><input type="checkbox" data-f="showPricing"> Show the per-service amounts on the SOW</label>
+  </div>
+
+  <!-- 4. AD SPEND -->
+  <div class="emc-card">
+    <h3>4. Ad Spend</h3>
+    <div class="emc-grid">
+      <div class="emc-field">
+        <label>Monthly ad spend budget</label>
+        <div class="emc-money"><span>$</span><input type="text" inputmode="decimal" data-f="adSpend" placeholder="Leave blank if N/A"></div>
+      </div>
+      <div class="emc-field">
+        <span class="emc-lbl">Billing method</span>
+        <label class="emc-check"><input type="checkbox" data-f="billCard"> Client credit/debit card</label>
+        <label class="emc-check"><input type="checkbox" data-f="billDirect"> Client pays platform directly</label>
+        <label class="emc-check" style="flex-wrap:nowrap"><input type="checkbox" data-f="billOther"> Other: <input type="text" data-f="billOtherText" style="padding:5px 8px;font-size:13px"></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. FEES -->
+  <div class="emc-card">
+    <h3>5. Fees</h3>
+    <div class="emc-grid">
+      <div class="emc-field">
+        <label>Monthly service fee <span class="emc-req">*</span></label>
+        <div class="emc-money"><span>$</span><input type="text" inputmode="decimal" data-f="monthlyFee" placeholder="5,000.00"></div>
+        <p class="emc-hint" data-emc-feehint>Fills in from the line items automatically. You can type over it.</p>
+      </div>
+      <div class="emc-field">
+        <label>Setup fee (one-time)</label>
+        <div class="emc-money"><span>$</span><input type="text" inputmode="decimal" data-f="setupFee" placeholder="0"></div>
+      </div>
+      <div class="emc-field emc-full">
+        <label>Additional work rate</label>
+        <input type="text" data-f="hourlyRate" placeholder="$150/hr unless otherwise agreed.">
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. TERM + SIGNERS -->
+  <div class="emc-card">
+    <h3>6. Term &amp; Signers</h3>
+    <div class="emc-grid">
+      <div class="emc-field"><label>Start date <span class="emc-req">*</span></label><input type="date" data-f="startDate"></div>
+      <div class="emc-field"><label>Initial term (if any)</label><input type="text" data-f="initialTerm" placeholder="e.g. 6 months, or leave blank"></div>
+      <div class="emc-field"><label>Envision signer name</label><input type="text" data-f="emName" placeholder="Luis Martinez"></div>
+      <div class="emc-field"><label>Envision signer title</label><input type="text" data-f="emTitle" placeholder="Sales Manager"></div>
+    </div>
+    <p class="emc-hint" style="margin:-4px 0 12px">Signature and date lines are left blank so you can drop BoldSign Signature and Date Signed fields on them.</p>
+  </div>
+
+  <div class="emc-errors" data-emc-errors></div>
+
+  <div class="emc-actions">
+    <select class="emc-select" data-f="docs" aria-label="Documents to include">
+      <option value="both">MSA + SOW (one PDF)</option>
+      <option value="msa">MSA only</option>
+      <option value="sow">SOW only</option>
+    </select>
+    <button type="button" class="emc-btn" data-emc-action="download">Download PDF</button>
+    <button type="button" class="emc-btn emc-ghost" data-emc-action="preview">Preview</button>
+    <span class="emc-status" data-emc-status></span>
+    <button type="button" class="emc-btn emc-danger" data-emc-action="reset">New contract</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('emc-root');
+  if (!root || root.getAttribute('data-emc-ready')) return;
+  root.setAttribute('data-emc-ready', '1');
+
+  var JSPDF_URL = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+  var STORAGE_KEY = 'emc-contract-draft-v1';
+  var LOGO = 'data:image/jpeg;base64,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';
+  var LOGO_RATIO = 480 / 186;
+
+  // ---------------------------------------------------------------
+  // CONTRACT TEXT. Edit wording here.
+  // ---------------------------------------------------------------
+  var MSA_SECTIONS = [
+    ['Parties and Purpose', 'This Master Services Agreement (“Agreement”) is between Envision Marketing, LLC (“EM”) and the undersigned client (“Client”). The purpose of this Agreement is to establish the general terms under which EM will provide digital marketing services, including Search Engine Optimization (“SEO”) and/or Pay-Per-Click advertising (“PPC”), as detailed in one or more Statements of Work (“SOWs”).'],
+    ['Term and Termination', 'This Agreement begins on the date of last signature and remains in effect until terminated. Either party may terminate with 60 days’ written notice. EM may suspend or terminate immediately for nonpayment or failure to provide required access. Client must pay all fees through the effective termination date. If Client does not return this Agreement, the proposed engagement is considered null and void and EM will have no obligation to Client whatsoever. If Client terminates this Agreement without providing the required notice, Client shall be immediately responsible for all fees that would have been due during the applicable notice period, which amounts shall be accelerated and immediately due and payable.'],
+    ['Scope of Services', 'Actual services, deliverables, domains, timelines, and fees will be defined in each SOW. Only the items selected or described in a signed SOW are included. Changes to services require a new or amended SOW.'],
+    ['Fees and Payment', 'Client will be billed monthly for service fees, taxes, and authorized costs. Payment is due within 30 days. Invoices 60 or more days past due may be suspended and accrue interest at 1% per month. Client agrees to pay attorney fees and costs for collection efforts. Billing disputes must be raised no longer than 30 days after issuance of the bill in question or Client waives the dispute. EM may suspend services at any time during periods of non-payment or failure by Client to provide timely, complete access required for EM to perform the services.'],
+    ['Third-Party Costs and Ad Spend', 'Client is responsible for all advertising costs and platform fees (Google Ads, Meta Ads, Bing, etc.). All PPC accounts must use Client’s payment method. Client is responsible for licensing fees for any third-party content.'],
+    ['Additional Work', 'Updates or revisions outside an SOW may be billed at EM’s standard hourly rate. Costs over $200 require prior approval unless it is not practicable to obtain such consent in advance.'],
+    ['Client Responsibilities', 'Client will provide timely access to all necessary accounts (“Client Channels”), designate one decision-making representative, and provide required content or approvals. Client shall provide timely, complete access to all websites, domains, hosting, analytics, advertising platforms, and other accounts reasonably required for EM to perform the services, and EM shall not be responsible for any delays, performance issues, or results impacted by Client’s failure to provide such access.'],
+    ['Client Content', 'Client grants EM a license to use content for service delivery and warrants non-infringement.'],
+    ['No Guarantee of Results', 'EM cannot guarantee specific rankings, impressions, clicks, conversions, or performance.'],
+    ['Limitation of Liability', 'EM is not liable for search engine changes, outages, errors, malware, or any consequential damages. Client acknowledges that digital marketing services involve technical systems and human inputs and EM shall not be liable for errors, omissions, incorrect configurations, budget inputs, or service interruptions, even if caused by EM, except to the extent required by applicable law. If EM is found liable by a court with jurisdiction, the EM and Client agree EM’s liability is capped at $50. This limitation of liability applies regardless of the form of the claim, whether in contract, tort (including negligence), or otherwise.'],
+    ['Indemnification', 'Client will indemnify and hold harmless EM for claims arising from Client content, instructions, negligence, or breach. EM provides no indemnity to Client.'],
+    ['Non-Exclusivity', 'EM may work with Client’s industry competitors.'],
+    ['Confidentiality', 'Both parties must maintain confidentiality of non-public information.'],
+    ['Notices', 'Notices may be sent via email or mail to the addresses Client provides to EM.'],
+    ['Force Majeure/Third Party Platform Changes', 'EM is not responsible for delays, failures, or changes caused by third-party platforms, search engines, or events beyond EM’s reasonable control.'],
+    ['Survival', 'The provisions relating to fees and payment, limitation of liability, indemnification, confidentiality, dispute resolution, and governing law shall survive termination or expiration of this Agreement.'],
+    ['Governing Law and Disputes', 'Nevada law governs. Disputes resolved via binding confidential arbitration under AAA Commercial Rules.'],
+    ['Entire Agreement', 'This Agreement and all subsequent SOWs constitute the full Agreement between EM and Client.']
+  ];
+
+  var SOW_TEXT = {
+    termNote: 'Services continue month-to-month under the MSA afterward.',
+    authorization: 'By signing below, Client agrees this SOW is governed by the Master Services Agreement.',
+    defaultRate: '$150/hr unless otherwise agreed.'
+  };
+
+  var SERVICES = {
+    seo: [
+      { id: 'seoMonthly', label: 'SEO Monthly', sub: 'tier', subPlaceholder: 'Tier, e.g. Premium' },
+      { id: 'localSeo', label: 'Local SEO / GBP Optimization' },
+      { id: 'content', label: 'Content Creation' },
+      { id: 'techSeo', label: 'Technical SEO Updates' }
+    ],
+    ppc: [
+      { id: 'googleAds', label: 'Google Ads Management' },
+      { id: 'metaAds', label: 'Meta Ads Management' },
+      { id: 'bingAds', label: 'Bing Ads Management' },
+      { id: 'youtubeAds', label: 'YouTube Ads' },
+      { id: 'retargeting', label: 'Retargeting / Display' },
+      { id: 'video', label: 'Video Production' }
+    ],
+    custom: [
+      { id: 'webDev', label: 'Website Updates / Development' },
+      { id: 'landing', label: 'Landing Page Creation' },
+      { id: 'dashboard', label: 'Reporting Dashboard Setup' },
+      { id: 'other', label: 'Other:', sub: 'text', subPlaceholder: 'Describe' }
+    ]
+  };
+  var ALL_SERVICES = SERVICES.seo.concat(SERVICES.ppc, SERVICES.custom);
+
+  // ---------------------------------------------------------------
+  // FORM
+  // ---------------------------------------------------------------
+  function $(sel) { return root.querySelector(sel); }
+  function $all(sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  $all('[data-emc-logo]').forEach(function (img) { img.src = LOGO; });
+
+  Object.keys(SERVICES).forEach(function (group) {
+    var box = $('[data-emc-group="' + group + '"]');
+    SERVICES[group].forEach(function (s) {
+      var row = document.createElement('div');
+      row.className = 'emc-svc';
+      var sub = '';
+      if (s.sub) sub = '<input type="text" class="emc-sub" data-f="svc_' + s.id + '_sub" placeholder="' + esc(s.subPlaceholder) + '">';
+      row.innerHTML =
+        '<label class="emc-check" style="margin:0"><input type="checkbox" data-f="svc_' + s.id + '"> ' + esc(s.label) + ' ' + sub + '</label>' +
+        '<div class="emc-money"><span>$</span><input type="text" inputmode="decimal" data-f="svc_' + s.id + '_amt" placeholder="/mo" aria-label="' + esc(s.label) + ' monthly amount"></div>';
+      box.appendChild(row);
+    });
+  });
+
+  var fields = {};
+  $all('[data-f]').forEach(function (el) { fields[el.getAttribute('data-f')] = el; });
+
+  function readState() {
+    var st = {};
+    Object.keys(fields).forEach(function (k) {
+      var el = fields[k];
+      st[k] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    return st;
+  }
+  function writeState(st) {
+    Object.keys(fields).forEach(function (k) {
+      if (!(k in st)) return;
+      var el = fields[k];
+      if (el.type === 'checkbox') el.checked = !!st[k]; else el.value = st[k];
+    });
+  }
+
+  function parseMoney(v) {
+    var n = parseFloat(String(v || '').replace(/[^0-9.\-]/g, ''));
+    return isFinite(n) ? n : null;
+  }
+  function fmtMoney(n) {
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return iso || '';
+    var mons = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return mons[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
+  }
+  function todayIso() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+
+  // Monthly fee follows the line-item total until the user types their own number.
+  var feeManual = false;
+  function lineTotal() {
+    var st = readState(), sum = 0, any = false;
+    ALL_SERVICES.forEach(function (s) {
+      var a = parseMoney(st['svc_' + s.id + '_amt']);
+      if (st['svc_' + s.id] && a !== null) { sum += a; any = true; }
+    });
+    return { sum: sum, any: any };
+  }
+  function syncServices() {
+    ALL_SERVICES.forEach(function (s) {
+      var on = fields['svc_' + s.id].checked;
+      fields['svc_' + s.id + '_amt'].disabled = !on;
+      if (fields['svc_' + s.id + '_sub']) fields['svc_' + s.id + '_sub'].disabled = !on;
+    });
+    fields.billOtherText.disabled = !fields.billOther.checked;
+    var t = lineTotal();
+    $('[data-emc-sum]').textContent = fmtMoney(t.sum);
+    if (t.any && !feeManual) fields.monthlyFee.value = t.sum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var hint = $('[data-emc-feehint]');
+    if (t.any && feeManual && parseMoney(fields.monthlyFee.value) !== t.sum) {
+      hint.innerHTML = 'Doesn’t match the line items total (' + fmtMoney(t.sum) + '). <a href="#" data-emc-usesum>Use total</a>';
+    } else {
+      hint.textContent = 'Fills in from the line items automatically. You can type over it.';
+    }
+  }
+
+  function save() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ st: readState(), feeManual: feeManual })); } catch (e) {}
+  }
+  function defaults() {
+    fields.startDate.value = todayIso();
+    fields.contactTitle.value = 'Owner';
+    fields.emName.value = 'Luis Martinez';
+    fields.emTitle.value = 'Sales Manager';
+    fields.hourlyRate.value = SOW_TEXT.defaultRate;
+    fields.setupFee.value = '0';
+    fields.docs.value = 'both';
+  }
+
+  defaults();
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (saved && saved.st) { writeState(saved.st); feeManual = !!saved.feeManual; }
+  } catch (e) {}
+  syncServices();
+
+  root.addEventListener('input', function (e) {
+    if (e.target === fields.monthlyFee) feeManual = fields.monthlyFee.value.trim() !== '';
+    syncServices(); save();
+  });
+  root.addEventListener('change', function () { syncServices(); save(); });
+  root.addEventListener('click', function (e) {
+    if (e.target.hasAttribute('data-emc-usesum')) {
+      e.preventDefault(); feeManual = false; syncServices(); save(); return;
+    }
+    var btn = e.target.closest('[data-emc-action]');
+    if (!btn) return;
+    var action = btn.getAttribute('data-emc-action');
+    if (action === 'reset') {
+      if (!confirm('Clear the form and start a new contract?')) return;
+      Object.keys(fields).forEach(function (k) {
+        var el = fields[k];
+        if (el.type === 'checkbox') el.checked = false; else if (el.tagName !== 'SELECT') el.value = '';
+      });
+      feeManual = false; defaults(); syncServices(); save(); showErrors([]);
+      root.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    run(action, btn);
+  });
+
+  function showErrors(list) {
+    var box = $('[data-emc-errors]');
+    if (!list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.innerHTML = '<strong>Fix these before generating:</strong><ul>' + list.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>';
+    box.style.display = 'block';
+    box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function validate(st) {
+    var errs = [];
+    if (!st.company.trim()) errs.push('Company name is required.');
+    if (!st.contact.trim()) errs.push('Client signer name is required.');
+    if (st.docs !== 'msa') {
+      if (!ALL_SERVICES.some(function (s) { return st['svc_' + s.id]; })) errs.push('Select at least one service.');
+      if (parseMoney(st.monthlyFee) === null) errs.push('Monthly service fee is required.');
+      if (!st.startDate) errs.push('Start date is required.');
+      if (st.svc_other && !st.svc_other_sub.trim()) errs.push('Describe the "Other" service or uncheck it.');
+      if (st.billOther && !st.billOtherText.trim()) errs.push('Describe the "Other" billing method or uncheck it.');
+    }
+    return errs;
+  }
+
+  // ---------------------------------------------------------------
+  // jsPDF loader
+  // ---------------------------------------------------------------
+  var jspdfPromise = null;
+  function loadJsPDF() {
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if (jspdfPromise) return jspdfPromise;
+    jspdfPromise = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = JSPDF_URL;
+      s.onload = function () { window.jspdf ? resolve(window.jspdf.jsPDF) : reject(new Error('jsPDF did not load')); };
+      s.onerror = function () { jspdfPromise = null; reject(new Error('Could not load the PDF library. Check your connection and try again.')); };
+      document.head.appendChild(s);
+    });
+    return jspdfPromise;
+  }
+
+  function run(action, btn) {
+    var st = readState();
+    var errs = validate(st);
+    showErrors(errs);
+    if (errs.length) return;
+    var status = $('[data-emc-status]');
+    btn.disabled = true; status.textContent = 'Building PDF…';
+    // Open the preview tab synchronously so popup blockers allow it.
+    var win = action === 'preview' ? window.open('', '_blank') : null;
+    loadJsPDF().then(function (jsPDF) {
+      var doc = buildPdf(jsPDF, st);
+      var name = fileName(st);
+      if (action === 'preview') {
+        var url = URL.createObjectURL(doc.output('blob'));
+        if (win) win.location.href = url; else window.open(url, '_blank');
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      } else {
+        doc.save(name);
+      }
+      status.textContent = action === 'preview' ? 'Preview opened.' : 'Downloaded ' + name;
+    }).catch(function (err) {
+      if (win) win.close();
+      status.textContent = '';
+      showErrors([err.message || String(err)]);
+    }).then(function () { btn.disabled = false; });
+  }
+
+  function fileName(st) {
+    var base = st.company.trim().replace(/[\\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ') || 'Client';
+    var suffix = st.docs === 'msa' ? 'MSA' : st.docs === 'sow' ? 'SOW' : 'MSA and SOW';
+    return base + ' - ' + suffix + '.pdf';
+  }
+
+  // ---------------------------------------------------------------
+  // PDF BUILDER (US Letter, points)
+  // ---------------------------------------------------------------
+  var BLUE = [10, 110, 180], SKY = [20, 160, 220], BLACK = [13, 13, 13], GRAY = [74, 74, 74], LIGHT = [245, 247, 250], LINE = [214, 221, 229];
+  var PW = 612, PH = 792, ML = 54, MR = 54, CW = PW - ML - MR;
+  var TOP = 92, BOTTOM = PH - 50;
+
+  function buildPdf(jsPDF, st) {
+    var doc = new jsPDF({ unit: 'pt', format: 'letter', compress: true });
+    var y = TOP;
+    var sections = []; // {title, start, end}
+    var cur = null;
+
+    function color(c, kind) {
+      if (kind === 'fill') doc.setFillColor(c[0], c[1], c[2]);
+      else if (kind === 'draw') doc.setDrawColor(c[0], c[1], c[2]);
+      else doc.setTextColor(c[0], c[1], c[2]);
+    }
+    function font(style, size, c) { doc.setFont('helvetica', style); doc.setFontSize(size); color(c || BLACK); }
+    function page() { return doc.getCurrentPageInfo().pageNumber; }
+
+    function startDoc(title, first) {
+      if (!first) doc.addPage();
+      cur = { title: title, start: page() };
+      sections.push(cur);
+      y = TOP;
+    }
+    function newPage() { doc.addPage(); y = TOP; }
+    function ensure(h) { if (y + h > BOTTOM) newPage(); }
+
+    function para(text, opts) {
+      opts = opts || {};
+      var size = opts.size || 9.5, lh = size * 1.38;
+      font(opts.style || 'normal', size, opts.color);
+      var lines = doc.splitTextToSize(text, opts.width || CW);
+      lines.forEach(function (ln) {
+        ensure(lh);
+        doc.text(ln, opts.x || ML, y + size);
+        y += lh;
+      });
+      y += opts.after == null ? 6 : opts.after;
+    }
+
+    function title(text, sub) {
+      font('bold', 18, BLUE);
+      doc.text(text, ML, y + 18);
+      y += 26;
+      if (sub) { font('normal', 9.5, GRAY); doc.text(sub, ML, y + 10); y += 16; }
+      color(SKY, 'fill'); doc.rect(ML, y + 2, 48, 2.5, 'F');
+      y += 18;
+    }
+
+    function heading(text, keepWith) {
+      ensure(keepWith || 40);
+      font('bold', 10.5, BLUE);
+      doc.text(text, ML, y + 10.5);
+      y += 16;
+    }
+
+    function checkbox(x, yTop, checked) {
+      color(GRAY, 'draw'); doc.setLineWidth(0.8);
+      doc.rect(x, yTop, 9, 9, 'S');
+      if (checked) {
+        color(BLUE, 'draw'); doc.setLineWidth(1.6);
+        doc.line(x + 1.8, yTop + 4.8, x + 3.9, yTop + 7.2);
+        doc.line(x + 3.9, yTop + 7.2, x + 7.6, yTop + 1.8);
+      }
+    }
+
+    function headerBar(x, w, text) {
+      color(BLUE, 'fill'); doc.rect(x, y, w, 18, 'F');
+      font('bold', 9, [255, 255, 255]);
+      doc.text(text, x + 8, y + 12.2);
+    }
+
+    // Label/value table. rows: [label, value]
+    function kvTable(head, rows, labelW) {
+      labelW = labelW || 170;
+      var size = 9.5, lh = size * 1.35, pad = 6;
+      var heights = rows.map(function (r) {
+        font('normal', size);
+        var n = r.full ? doc.splitTextToSize(r.full, CW - 16).length
+          : Math.max(doc.splitTextToSize(r[1] || ' ', CW - labelW - 16).length, doc.splitTextToSize(r[0], labelW - 16).length);
+        return n * lh + pad * 2 - 2;
+      });
+      ensure(18 + (heights[0] || 0) + 4);
+      headerBar(ML, CW, head);
+      y += 18;
+      rows.forEach(function (r, i) {
+        var h = heights[i];
+        if (y + h > BOTTOM) { newPage(); headerBar(ML, CW, head + ' (continued)'); y += 18; }
+        color(i % 2 ? LIGHT : [255, 255, 255], 'fill'); doc.rect(ML, y, CW, h, 'F');
+        if (r.full) {
+          font('italic', size, GRAY);
+          doc.text(doc.splitTextToSize(r.full, CW - 16), ML + 8, y + pad + size - 1, { lineHeightFactor: 1.35 });
+        } else {
+          font('bold', size, BLACK);
+          doc.text(doc.splitTextToSize(r[0], labelW - 16), ML + 8, y + pad + size - 1, { lineHeightFactor: 1.35 });
+          font('normal', size, BLACK);
+          doc.text(doc.splitTextToSize(r[1] || ' ', CW - labelW - 16), ML + labelW + 8, y + pad + size - 1, { lineHeightFactor: 1.35 });
+        }
+        color(LINE, 'draw'); doc.setLineWidth(0.5); doc.line(ML, y + h, ML + CW, y + h);
+        y += h;
+      });
+      y += 14;
+    }
+
+    // Checkbox list table. items: {label, checked, amount}
+    function checkTable(x, w, head, items, rowCount) {
+      var rh = 20, startY = y;
+      headerBar(x, w, head);
+      var yy = y + 18;
+      for (var i = 0; i < rowCount; i++) {
+        var it = items[i];
+        color(i % 2 ? LIGHT : [255, 255, 255], 'fill'); doc.rect(x, yy, w, rh, 'F');
+        if (it) {
+          checkbox(x + 8, yy + 5.5, it.checked);
+          var amtW = it.amount ? 70 : 0;
+          font(it.checked ? 'bold' : 'normal', 9, it.checked ? BLACK : GRAY);
+          var label = doc.splitTextToSize(it.label, w - 32 - amtW)[0];
+          doc.text(label, x + 24, yy + 13.3);
+          if (it.amount) { font('normal', 9, BLACK); doc.text(it.amount, x + w - 8, yy + 13.3, { align: 'right' }); }
+        }
+        color(LINE, 'draw'); doc.setLineWidth(0.5); doc.line(x, yy + rh, x + w, yy + rh);
+        yy += rh;
+      }
+      return yy - startY;
+    }
+
+    function signatureBlock(leftHead, left, rightHead, right) {
+      var rowH = 26, colW = (CW - 36) / 2;
+      var h = 24 + Math.max(left.length, right.length) * rowH + 10;
+      ensure(h);
+      [[ML, leftHead, left], [ML + colW + 36, rightHead, right]].forEach(function (col) {
+        var x = col[0], yy = y;
+        font('bold', 10.5, BLUE); doc.text(col[1], x, yy + 10.5);
+        color(SKY, 'fill'); doc.rect(x, yy + 15, colW, 1.5, 'F');
+        yy += 24;
+        col[2].forEach(function (r) {
+          yy += rowH;
+          font('bold', 9, GRAY);
+          doc.text(r[0], x, yy - 4);
+          var lx = x + doc.getTextWidth(r[0]) + 6;
+          color(GRAY, 'draw'); doc.setLineWidth(0.6); doc.line(lx, yy - 2, x + colW, yy - 2);
+          if (r[1]) { font('normal', 10, BLACK); doc.text(r[1], lx + 3, yy - 5); }
+        });
+      });
+      y += h;
+    }
+
+    // ---------- MSA ----------
+    var company = st.company.trim();
+    var contact = st.contact.trim();
+    var clientTitle = st.contactTitle.trim();
+    var emName = st.emName.trim(), emTitle = st.emTitle.trim();
+
+    function buildMsa(first) {
+      startDoc('Master Services Agreement', first);
+      title('Master Services Agreement', 'Envision Marketing, LLC  and  ' + company);
+      MSA_SECTIONS.forEach(function (s, i) {
+        heading((i + 1) + '. ' + s[0]);
+        para(s[1], { after: 6 });
+      });
+      y += 10;
+      signatureBlock('Envision Marketing, LLC',
+        [['By:', emName], ['Title:', emTitle], ['Signature:', ''], ['Date:', '']],
+        'Client',
+        [['By:', contact], ['Company:', company], ['Title:', clientTitle], ['Signature:', ''], ['Date:', '']]);
+    }
+
+    // ---------- SOW ----------
+    function buildSow(first) {
+      startDoc('Statement of Work', first);
+      title('Statement of Work (SOW)', 'Governed by the Master Services Agreement between Envision Marketing, LLC and ' + company);
+
+      var addr = [st.address1.trim(), st.address2.trim()].filter(Boolean).join('\n');
+      kvTable('1. Client Information', [
+        ['Company', company],
+        ['Contact', contact + (clientTitle ? ', ' + clientTitle : '')],
+        ['Address', addr],
+        ['Website', st.website.trim()]
+      ]);
+
+      kvTable('2. Domains', [
+        ['Primary Domain', st.primaryDomain.trim() || st.website.trim()],
+        ['Additional Domains/GBPs', st.additionalDomains.trim() || 'None']
+      ]);
+
+      function items(group) {
+        return SERVICES[group].map(function (s) {
+          var on = !!st['svc_' + s.id];
+          var sub = (st['svc_' + s.id + '_sub'] || '').trim();
+          var label = s.label;
+          if (s.sub === 'tier' && sub) label += ' – ' + sub;
+          if (s.sub === 'text') label = 'Other: ' + (on ? sub : '');
+          var amt = on && st.showPricing ? parseMoney(st['svc_' + s.id + '_amt']) : null;
+          return { label: label, checked: on, amount: amt !== null ? fmtMoney(amt) + '/mo' : '' };
+        });
+      }
+
+      heading('3. Services Selected (Check All That Apply)', 18 + 18 + 6 * 20 + 20);
+      var half = (CW - 12) / 2;
+      var seo = items('seo'), ppc = items('ppc');
+      var rows = Math.max(seo.length, ppc.length);
+      checkTable(ML, half, 'SEO Services', seo, rows);
+      var h = checkTable(ML + half + 12, half, 'PPC Services', ppc, rows);
+      y += h + 12;
+      var custom = items('custom');
+      ensure(18 + custom.length * 20 + 8);
+      y += checkTable(ML, CW, 'Additional / Custom', custom, custom.length) + 18;
+
+      // Ad spend
+      var adSpend = parseMoney(st.adSpend);
+      var billing = [
+        { label: 'Client credit/debit card', checked: !!st.billCard },
+        { label: 'Client pays platform directly', checked: !!st.billDirect },
+        { label: 'Other: ' + (st.billOther ? st.billOtherText.trim() : ''), checked: !!st.billOther }
+      ];
+      ensure(18 + 26 + 18 + billing.length * 20 + 12);
+      kvTable('4. Ad Spend', [['Monthly Ad Spend Budget', adSpend !== null ? fmtMoney(adSpend) : 'N/A']]);
+      y -= 14;
+      y += checkTable(ML, CW, 'Billing Method', billing, billing.length) + 18;
+
+      var setup = parseMoney(st.setupFee);
+      kvTable('5. Fees', [
+        ['Monthly Service Fee', fmtMoney(parseMoney(st.monthlyFee))],
+        ['Setup Fee', fmtMoney(setup || 0)],
+        ['Additional Work Rate', st.hourlyRate.trim() || SOW_TEXT.defaultRate]
+      ]);
+
+      kvTable('6. Term', [
+        ['Start Date', fmtDate(st.startDate)],
+        ['Initial Term (if any)', st.initialTerm.trim() || 'None'],
+        { full: SOW_TEXT.termNote }
+      ]);
+
+      ensure(40 + 24 + 3 * 26 + 10);
+      heading('Authorization', 40 + 24 + 3 * 26 + 10);
+      para(SOW_TEXT.authorization, { after: 10 });
+      signatureBlock('Envision Marketing, LLC',
+        [['By:', emName], ['Signature:', ''], ['Date:', '']],
+        'Client',
+        [['By:', contact], ['Signature:', ''], ['Date:', '']]);
+    }
+
+    if (st.docs === 'msa') buildMsa(true);
+    else if (st.docs === 'sow') buildSow(true);
+    else { buildMsa(true); buildSow(false); }
+
+    // Header and footer on every page, numbered per document.
+    var total = doc.getNumberOfPages();
+    sections.forEach(function (s, i) { s.end = i + 1 < sections.length ? sections[i + 1].start - 1 : total; });
+    for (var p = 1; p <= total; p++) {
+      doc.setPage(p);
+      var sec = sections.filter(function (s) { return p >= s.start && p <= s.end; })[0];
+      color(BLUE, 'fill'); doc.rect(0, 0, PW, 4, 'F');
+      var lw = 115;
+      doc.addImage(LOGO, 'JPEG', ML, 18, lw, lw / LOGO_RATIO, 'emc-logo');
+      font('normal', 8, GRAY);
+      doc.text(sec.title, PW - MR, 38, { align: 'right' });
+      doc.text(company, PW - MR, 50, { align: 'right' });
+      color(LINE, 'draw'); doc.setLineWidth(0.5); doc.line(ML, 70, PW - MR, 70);
+
+      color(BLUE, 'fill'); doc.rect(0, PH - 3, PW, 3, 'F');
+      color(LINE, 'draw'); doc.line(ML, PH - 34, PW - MR, PH - 34);
+      font('normal', 7.5, GRAY);
+      doc.text('Envision Marketing, LLC  |  ' + sec.title + '  |  ' + company, ML, PH - 20);
+      doc.text('Page ' + (p - sec.start + 1) + ' of ' + (sec.end - sec.start + 1), PW - MR, PH - 20, { align: 'right' });
+    }
+
+    doc.setProperties({ title: fileName(st).replace(/\.pdf$/, ''), author: 'Envision Marketing, LLC', subject: 'Master Services Agreement / Statement of Work' });
+    return doc;
+  }
+
+  // Exposed for automated testing only.
+  root.__emcBuild = function (jsPDF) { return buildPdf(jsPDF, readState()); };
+})();
+</script>
