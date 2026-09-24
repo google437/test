@@ -297,6 +297,7 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   $all('[data-emc-logo]').forEach(function (img) { img.src = LOGO; });
+  if (window.claude && window.claude.use) $all('[data-emc-action=preview]').forEach(function (b) { b.hidden = true; });
 
   Object.keys(SERVICES).forEach(function (group) {
     var box = $('[data-emc-group="' + group + '"]');
@@ -394,6 +395,7 @@
   try {
     var saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (saved && saved.st) { writeState(saved.st); feeManual = !!saved.feeManual; }
+    else if (window.EMC_SAMPLE) { writeState(window.EMC_SAMPLE); }
   } catch (e) {}
   syncServices();
 
@@ -410,7 +412,12 @@
     if (!btn) return;
     var action = btn.getAttribute('data-emc-action');
     if (action === 'reset') {
-      if (!confirm('Clear the form and start a new contract?')) return;
+      if (!btn.getAttribute('data-emc-armed')) {
+        btn.setAttribute('data-emc-armed', '1'); btn.textContent = 'Click again to clear';
+        setTimeout(function () { btn.removeAttribute('data-emc-armed'); btn.textContent = 'New contract'; }, 4000);
+        return;
+      }
+      btn.removeAttribute('data-emc-armed'); btn.textContent = 'New contract';
       Object.keys(fields).forEach(function (k) {
         var el = fields[k];
         if (el.type === 'checkbox') el.checked = false; else if (el.tagName !== 'SELECT') el.value = '';
@@ -477,15 +484,29 @@
         var url = URL.createObjectURL(doc.output('blob'));
         if (win) win.location.href = url; else window.open(url, '_blank');
         setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-      } else {
-        doc.save(name);
+        return 'Preview opened.';
       }
-      status.textContent = action === 'preview' ? 'Preview opened.' : 'Downloaded ' + name;
+      return saveFile(doc, name);
+    }).then(function (msg) {
+      status.textContent = msg;
     }).catch(function (err) {
       if (win) win.close();
       status.textContent = '';
       showErrors([err.message || String(err)]);
     }).then(function () { btn.disabled = false; });
+  }
+
+  // Inside the Claude artifact viewer, downloads go through its save prompt.
+  // Everywhere else (Duda), jsPDF triggers a normal browser download.
+  function saveFile(doc, name) {
+    if (!(window.claude && window.claude.use)) { doc.save(name); return Promise.resolve('Downloaded ' + name); }
+    return window.claude.use('downloads').then(function (dl) {
+      if (!dl) { doc.save(name); return 'Downloaded ' + name; }
+      return dl.save({ filename: name, data: doc.output('blob') }).then(function () { return 'Saved ' + name; }, function (e) {
+        if (e && e.code === 'declined') return 'Download cancelled.';
+        throw new Error('Could not save the PDF (' + ((e && e.code) || 'error') + ').');
+      });
+    });
   }
 
   function fileName(st) {
