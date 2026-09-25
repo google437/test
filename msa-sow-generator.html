@@ -127,12 +127,12 @@
   <div class="emc-card">
     <h3>1. Client Information</h3>
     <div class="emc-grid">
-      <div class="emc-field"><label>Company name <span class="emc-req">*</span></label><input type="text" data-f="company" placeholder="XL Rez Residential Landscape"></div>
-      <div class="emc-field"><label>Website</label><input type="text" data-f="website" placeholder="xlrez.com"></div>
-      <div class="emc-field"><label>Client signer name <span class="emc-req">*</span></label><input type="text" data-f="contact" placeholder="Tony Garritano"></div>
+      <div class="emc-field"><label>Company name <span class="emc-req">*</span></label><input type="text" data-f="company" placeholder="Company Name, LLC"></div>
+      <div class="emc-field"><label>Website</label><input type="text" data-f="website" placeholder="companywebsite.com"></div>
+      <div class="emc-field"><label>Client signer name <span class="emc-req">*</span></label><input type="text" data-f="contact" placeholder="First Last"></div>
       <div class="emc-field"><label>Client signer title</label><input type="text" data-f="contactTitle" placeholder="Owner"></div>
-      <div class="emc-field"><label>Street address</label><input type="text" data-f="address1" placeholder="3639 W. Hacienda Ave"></div>
-      <div class="emc-field"><label>City, State ZIP</label><input type="text" data-f="address2" placeholder="Las Vegas, NV 89118"></div>
+      <div class="emc-field"><label>Street address</label><input type="text" data-f="address1" placeholder="123 Main Street"></div>
+      <div class="emc-field"><label>City, State ZIP</label><input type="text" data-f="address2" placeholder="City, ST 00000"></div>
     </div>
   </div>
 
@@ -183,7 +183,7 @@
     <div class="emc-grid">
       <div class="emc-field">
         <label>Monthly service fee <span class="emc-req">*</span></label>
-        <div class="emc-money"><span>$</span><input type="text" inputmode="decimal" data-f="monthlyFee" placeholder="5,000.00"></div>
+        <div class="emc-money"><span>$</span><input type="text" inputmode="decimal" data-f="monthlyFee" placeholder="0.00"></div>
         <p class="emc-hint" data-emc-feehint>Fills in from the line items automatically. You can type over it.</p>
       </div>
       <div class="emc-field">
@@ -239,7 +239,7 @@
   // CONTRACT TEXT. Edit wording here.
   // ---------------------------------------------------------------
   var MSA_SECTIONS = [
-    ['Parties and Purpose', 'This Master Services Agreement (“Agreement”) is between Envision Marketing, LLC (“EM”) and the undersigned client (“Client”). The purpose of this Agreement is to establish the general terms under which EM will provide digital marketing services, including Search Engine Optimization (“SEO”) and/or Pay-Per-Click advertising (“PPC”), as detailed in one or more Statements of Work (“SOWs”).'],
+    ['Parties and Purpose', 'This Master Services Agreement (“Agreement”) is between Envision Marketing, LLC (“EM”) and the undersigned client (“Client”). The purpose of this Agreement is to establish the general terms under which EM will provide digital marketing services, including Search Engine Optimization (“SEO”) and/or Pay-Per-Click advertising (“PPC), as detailed in one or more Statements of Work (“SOWs”).'],
     ['Term and Termination', 'This Agreement begins on the date of last signature and remains in effect until terminated. Either party may terminate with 60 days’ written notice. EM may suspend or terminate immediately for nonpayment or failure to provide required access. Client must pay all fees through the effective termination date. If Client does not return this Agreement, the proposed engagement is considered null and void and EM will have no obligation to Client whatsoever. If Client terminates this Agreement without providing the required notice, Client shall be immediately responsible for all fees that would have been due during the applicable notice period, which amounts shall be accelerated and immediately due and payable.'],
     ['Scope of Services', 'Actual services, deliverables, domains, timelines, and fees will be defined in each SOW. Only the items selected or described in a signed SOW are included. Changes to services require a new or amended SOW.'],
     ['Fees and Payment', 'Client will be billed monthly for service fees, taxes, and authorized costs. Payment is due within 30 days. Invoices 60 or more days past due may be suspended and accrue interest at 1% per month. Client agrees to pay attorney fees and costs for collection efforts. Billing disputes must be raised no longer than 30 days after issuance of the bill in question or Client waives the dispute. EM may suspend services at any time during periods of non-payment or failure by Client to provide timely, complete access required for EM to perform the services.'],
@@ -673,7 +673,7 @@
 
     function buildMsa(first) {
       startDoc('Master Services Agreement', first);
-      title('Master Services Agreement', 'Envision Marketing, LLC  and  ' + company);
+      title('Master Services Agreement');
       MSA_SECTIONS.forEach(function (s, i) {
         heading((i + 1) + '. ' + s[0]);
         para(s[1], { after: 6 });
@@ -688,7 +688,7 @@
     // ---------- SOW ----------
     function buildSow(first) {
       startDoc('Statement of Work', first);
-      title('Statement of Work (SOW)', 'Governed by the Master Services Agreement between Envision Marketing, LLC and ' + company);
+      title('Statement of Work (SOW)');
 
       var addr = [st.address1.trim(), st.address2.trim()].filter(Boolean).join('\n');
       kvTable('1. Client Information', [
