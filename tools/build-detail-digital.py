@@ -32,8 +32,9 @@ DD_BRAND = """/*BRAND-START*/
   /*BRAND-END*/""" % logo_b64
 
 DD_CSS = """
-  /* Detail Digital skin */
-  .emc {
+  /* Detail Digital skin, scoped to this widget's own root so it never
+     restyles an Envision widget on the same page. */
+  #emc-root-dd.emc {
     --emc-blue: #EE691A;
     --emc-sky: #F58A45;
     --emc-black: #0D0E10;
@@ -43,19 +44,24 @@ DD_CSS = """
     font-family: Barlow, 'Helvetica Neue', Helvetica, Arial, sans-serif;
     border-bottom: 5px solid var(--emc-blue);
   }
-  .emc-head { border-top: 0; }
-  .emc-head img { width: 130px; background: #000; padding: 4px 6px; border-radius: 6px; }
-  .emc-head h2 { color: var(--emc-black); text-transform: uppercase; letter-spacing: .02em; }
-  .emc-card > h3 { color: var(--emc-black); }
-  .emc-group-title, .emc-btn { color: #000; }
-  .emc-btn:hover { background: #d95b10; }
-  .emc-btn.emc-ghost { color: #b34a0b; }
+  #emc-root-dd .emc-head { border-top: 0; }
+  #emc-root-dd .emc-head img { width: 130px; background: #000; padding: 4px 6px; border-radius: 6px; }
+  #emc-root-dd .emc-head h2 { color: var(--emc-black); text-transform: uppercase; letter-spacing: .02em; }
+  #emc-root-dd .emc-card > h3 { color: var(--emc-black); }
+  #emc-root-dd .emc-group-title, #emc-root-dd .emc-btn { color: #000; }
+  #emc-root-dd .emc-btn:hover { background: #d95b10; }
+  #emc-root-dd .emc-btn.emc-ghost { color: #b34a0b; }
 </style>"""
 
 src = open(SRC, encoding='utf-8').read()
 out, n = re.subn(r'/\*BRAND-START\*/.*?/\*BRAND-END\*/', lambda m: DD_BRAND, src, flags=re.S)
 assert n == 1, 'BRAND block not found'
 out = out.replace('</style>', DD_CSS, 1)
+# Own root id, so the Envision and Detail Digital widgets can share a page.
+for a, b in [('id="emc-root"', 'id="emc-root-dd"'),
+             ("document.getElementById('emc-root')", "document.getElementById('emc-root-dd')")]:
+    assert out.count(a) == 1, a
+    out = out.replace(a, b)
 out = out.replace('<!-- ENVISION MARKETING: MSA + SOW CONTRACT GENERATOR               -->',
                   '<!-- DETAIL DIGITAL: MSA + SOW CONTRACT GENERATOR                  -->', 1)
 out = out.replace('<!-- To change contract wording, edit MSA_SECTIONS / SOW_TEXT in    -->\n<!-- the <script> below.                                            -->',

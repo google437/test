@@ -113,8 +113,9 @@
     .emc-actions { position: static; }
   }
 
-  /* Detail Digital skin */
-  .emc {
+  /* Detail Digital skin, scoped to this widget's own root so it never
+     restyles an Envision widget on the same page. */
+  #emc-root-dd.emc {
     --emc-blue: #EE691A;
     --emc-sky: #F58A45;
     --emc-black: #0D0E10;
@@ -124,16 +125,16 @@
     font-family: Barlow, 'Helvetica Neue', Helvetica, Arial, sans-serif;
     border-bottom: 5px solid var(--emc-blue);
   }
-  .emc-head { border-top: 0; }
-  .emc-head img { width: 130px; background: #000; padding: 4px 6px; border-radius: 6px; }
-  .emc-head h2 { color: var(--emc-black); text-transform: uppercase; letter-spacing: .02em; }
-  .emc-card > h3 { color: var(--emc-black); }
-  .emc-group-title, .emc-btn { color: #000; }
-  .emc-btn:hover { background: #d95b10; }
-  .emc-btn.emc-ghost { color: #b34a0b; }
+  #emc-root-dd .emc-head { border-top: 0; }
+  #emc-root-dd .emc-head img { width: 130px; background: #000; padding: 4px 6px; border-radius: 6px; }
+  #emc-root-dd .emc-head h2 { color: var(--emc-black); text-transform: uppercase; letter-spacing: .02em; }
+  #emc-root-dd .emc-card > h3 { color: var(--emc-black); }
+  #emc-root-dd .emc-group-title, #emc-root-dd .emc-btn { color: #000; }
+  #emc-root-dd .emc-btn:hover { background: #d95b10; }
+  #emc-root-dd .emc-btn.emc-ghost { color: #b34a0b; }
 </style>
 
-<div class="emc" id="emc-root">
+<div class="emc" id="emc-root-dd">
   <div class="emc-head">
     <img data-emc-logo alt="Logo">
     <div>
@@ -245,7 +246,7 @@
 
 <script>
 (function () {
-  var root = document.getElementById('emc-root');
+  var root = document.getElementById('emc-root-dd');
   if (!root || root.getAttribute('data-emc-ready')) return;
   root.setAttribute('data-emc-ready', '1');
 
