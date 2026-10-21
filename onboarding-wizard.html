@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client Onboarding Wizard</title>
+<meta name="description" content="Envision Marketing client onboarding: the admin picks the services, the client is walked through granting each platform access.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#0A6EB4; --sky:#14A0DC; --ink:#0D0D0D; --gray:#4A4A4A; --muted:#7A8794;
+    --light:#F5F7FA; --line:#E6ECF3; --ok:#0EA371; --warn:#C47A00; --bad:#C0392B;
+    --panel:#ffffff; --bg-top:#fbfdff; --bg-bot:#f3f7fb; --sel-a:#f3f9ff; --sel-b:#eef6fe;
+    --shadow:0 1px 2px rgba(13,28,50,.04), 0 8px 24px rgba(10,110,180,.07);
+    --shadow-lg:0 18px 50px rgba(10,110,180,.16);
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink);
+    background:
+      radial-gradient(1100px 520px at 12% -8%, rgba(20,160,220,.14), transparent 60%),
+      radial-gradient(900px 520px at 108% 8%, rgba(10,110,180,.12), transparent 55%),
+      linear-gradient(180deg,var(--bg-top) 0%, var(--bg-bot) 100%);
+    min-height:100vh;padding:clamp(16px,3vw,40px) 16px;-webkit-font-smoothing:antialiased;
+  }
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  input,select,textarea{font:inherit;color:inherit}
+  a{color:var(--blue)}
+  h1,h2,h3,p{margin:0}
+  .shell{max-width:1080px;margin:0 auto}
+  .head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .head .brand{display:flex;align-items:center;text-decoration:none}
+  .head .brand img{height:38px;width:auto;display:block}
+  .head .brand .wm{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.03em;color:var(--blue)}
+  .head .brand .wm span{color:var(--sky)}
+  .head .divider{width:1px;height:30px;background:var(--line)}
+  .head h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(18px,2.4vw,23px);line-height:1.1;letter-spacing:-.02em}
+  .head p{margin-top:2px;color:var(--gray);font-size:13.5px}
+  .head .spacer{flex:1}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);background:#eaf4fc;border:1px solid #cfe4f5;border-radius:999px;padding:5px 10px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .sec{padding:20px clamp(16px,2.2vw,26px)}
+  .sec + .sec{border-top:1px solid var(--line)}
+  .sec h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:600;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;gap:9px}
+  .sec h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--sky);box-shadow:0 0 0 4px rgba(20,160,220,.15)}
+  .sec h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:clamp(20px,2.6vw,26px);letter-spacing:-.02em;line-height:1.15}
+  .lead{color:var(--gray);font-size:15px;line-height:1.55;margin-top:8px;max-width:62ch}
+  .grid{display:grid;grid-template-columns:1fr;gap:22px}
+  @media(min-width:900px){.grid{grid-template-columns:1.55fr .95fr;align-items:start}}
+  .grid.wiz{grid-template-columns:1fr}
+  @media(min-width:900px){.grid.wiz{grid-template-columns:270px 1fr}}
+  .grid > *{min-width:0}
+  .side,.nav{min-width:0;max-width:100%}
+
+  /* option cards */
+  .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+  .opt{position:relative;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:13px;padding:13px 15px 13px 14px;display:flex;flex-direction:column;gap:3px;transition:.18s ease}
+  .opt:hover{border-color:#bcd6ec;transform:translateY(-2px);box-shadow:0 6px 18px rgba(10,110,180,.10)}
+  .opt:focus-visible{outline:3px solid rgba(20,160,220,.4);outline-offset:2px}
+  .opt .nm{font-weight:600;font-size:14.5px;line-height:1.2;padding-right:26px}
+  .opt .sb{font-size:10.5px;color:var(--gray);line-height:1.25;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+  .opt .tick{position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;transition:.18s ease}
+  .opt .tick svg{width:11px;height:11px;opacity:0;transform:scale(.5);transition:.18s ease;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .opt[aria-pressed="true"]{border-color:var(--blue);background:linear-gradient(180deg,var(--sel-a),var(--sel-b));box-shadow:inset 0 0 0 1px rgba(10,110,180,.25)}
+  .opt[aria-pressed="true"] .tick{background:var(--blue);border-color:var(--blue)}
+  .opt[aria-pressed="true"] .tick svg{opacity:1;transform:scale(1)}
+  .opt.auto[aria-pressed="true"]{border-style:dashed}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600;background:#fff;transition:.15s}
+  .chip[aria-pressed="true"]{border-color:var(--blue);background:var(--sel-a);color:var(--blue)}
+  .chip .src{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .chip .x{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;background:rgba(10,110,180,.1);font-size:11px;line-height:1}
+
+  /* forms */
+  .f{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .f label{font-size:13px;font-weight:600;color:var(--ink)}
+  .f .help{font-size:12.5px;color:var(--muted);line-height:1.4}
+  .f input[type=text],.f input[type=email],.f input[type=url],.f input[type=tel],.f input[type=date],.f select,.f textarea{
+    width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;font-size:14.5px;transition:.15s}
+  .f input:focus,.f select:focus,.f textarea:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(20,160,220,.18)}
+  .f textarea{min-height:84px;resize:vertical}
+  .f.err input,.f.err select,.f.err textarea{border-color:var(--bad)}
+  .f .errmsg{font-size:12.5px;color:var(--bad)}
+  .f2{display:grid;grid-template-columns:1fr;gap:0 14px}
+  @media(min-width:640px){.f2{grid-template-columns:1fr 1fr}}
+  .radios{display:flex;flex-wrap:wrap;gap:8px}
+  .radios label{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;font-weight:500;background:#fff}
+  .radios label:has(input:checked){border-color:var(--blue);background:var(--sel-a)}
+  .radios input{accent-color:var(--blue)}
+  .check{display:flex;align-items:flex-start;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;font-size:14px;line-height:1.4}
+  .check:has(input:checked){border-color:var(--ok);background:#effbf5}
+  .check input{accent-color:var(--ok);width:18px;height:18px;margin-top:1px;flex:none}
+  .check b{display:block}
+  .check span{color:var(--gray);font-size:12.5px}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:11px;padding:11px 18px;font-weight:700;font-size:14.5px;transition:.15s;white-space:nowrap}
+  .btn.pri{background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;box-shadow:0 8px 20px rgba(10,110,180,.25)}
+  .btn.pri:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(10,110,180,.32)}
+  .btn.sec{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .btn.sec:hover{border-color:#bcd6ec}
+  .btn.ghost{color:var(--gray);padding-left:8px;padding-right:8px}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+  .btn.sm{padding:8px 12px;font-size:13px;border-radius:9px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;min-width:0}
+  .actions .btn{max-width:100%}
+  .actions .spacer{flex:1}
+
+  /* instruction steps */
+  .steps{counter-reset:s;display:flex;flex-direction:column;gap:12px;margin:16px 0}
+  .step{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}
+  .step::before{counter-increment:s;content:counter(s);width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--sky));color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center;margin-top:1px}
+  .step p{font-size:14.5px;line-height:1.55;color:var(--ink)}
+  .step p small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+  .step code,.kbd{font-family:inherit;background:#eef3f8;border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:13px;font-weight:600;color:var(--blue)}
+  .step p,.lead,.why,.note{overflow-wrap:anywhere}
+  .idbox{display:inline-flex;align-items:center;gap:8px;max-width:100%;overflow-wrap:anywhere;background:#fff;border:1.5px dashed var(--sky);border-radius:9px;padding:5px 10px;font-weight:700;color:var(--blue);font-size:14px}
+  .idbox button{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .note{border-left:3px solid var(--sky);background:#f3f9ff;border-radius:0 10px 10px 0;padding:10px 14px;font-size:13.5px;line-height:1.5;color:var(--gray);margin:12px 0}
+  .note.warn{border-color:var(--warn);background:#fff8ec}
+  .note.ok{border-color:var(--ok);background:#effbf5}
+  .why{font-size:13.5px;color:var(--gray);line-height:1.5;margin-top:6px}
+  .platform-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-top:4px}
+
+  /* sidebar */
+  .side{position:sticky;top:16px}
+  .side .panel{padding:14px}
+  .prog{height:7px;background:var(--light);border-radius:999px;overflow:hidden;margin:6px 0 14px}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--sky));border-radius:999px;transition:width .3s ease}
+  .plab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600}
+  .nav{display:flex;flex-direction:column;gap:4px}
+  .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border-radius:10px;padding:8px 10px;font-size:13.5px;font-weight:500;color:var(--gray)}
+  .nav button:hover{background:var(--light)}
+  .nav button.cur{background:var(--sel-a);color:var(--blue);font-weight:700}
+  .nav .st{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;flex:none;font-size:11px;font-weight:700;color:var(--muted);background:#fff}
+  .nav .st.done{background:var(--ok);border-color:var(--ok);color:#fff}
+  .nav .st.part{background:#fff8ec;border-color:var(--warn);color:var(--warn)}
+  .nav button.cur .st{border-color:var(--blue);color:var(--blue)}
+  .nav button.cur .st.done{background:var(--ok);border-color:var(--ok);color:#fff}
+  @media(max-width:899px){.side{position:static}.nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px}.nav button{width:auto;white-space:nowrap;padding:6px 10px;border:1px solid var(--line)}.nav button .lbl{display:none}.nav button.cur .lbl{display:inline}}
+
+  /* review */
+  .rev{display:flex;flex-direction:column;gap:10px}
+  .rev .row{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+  .rev .row .st{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff;background:var(--muted)}
+  .rev .row .st.done{background:var(--ok)}.rev .row .st.part{background:var(--warn)}
+  .rev .row b{font-size:14px}.rev .row small{display:block;color:var(--muted);font-size:12.5px}
+  .rev .row .edit{font-size:12.5px;font-weight:700;color:var(--blue)}
+  .summary{width:100%;min-height:200px;border:1.5px solid var(--line);border-radius:12px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.5;background:#fafcfe;white-space:pre-wrap}
+  .linkbox{display:flex;gap:8px;align-items:stretch}
+  .linkbox input{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;background:#fafcfe;min-width:0}
+  .kv{display:grid;grid-template-columns:1fr;gap:6px;font-size:13.5px}
+  .kv div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--line);padding:6px 0}
+  .kv div span:first-child{color:var(--muted)}
+  .kv div span:last-child{font-weight:600;text-align:right}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .muted{color:var(--muted);font-size:13px}
+  .hidden{display:none!important}
+  details.adv summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--blue);margin-bottom:10px}
+  .count{font-size:12.5px;color:var(--muted);font-weight:600}
+  .emoji{font-size:18px;line-height:1}
+  .welcome-list{display:grid;grid-template-columns:1fr;gap:8px;margin:16px 0}
+  @media(min-width:640px){.welcome-list{grid-template-columns:1fr 1fr}}
+  .welcome-list div{display:flex;gap:10px;align-items:center;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;font-size:14px;font-weight:600;background:#fff}
+  .welcome-list div small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+  footer{margin-top:28px;text-align:center;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="head">
+    <a class="brand" id="brand" href="#" aria-label="Envision Marketing"></a>
+    <div class="divider"></div>
+    <div>
+      <h1 id="title">Client Onboarding</h1>
+      <p id="subtitle">Set up what a client needs to give us, then send them one link.</p>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="modePill">Admin setup</span>
+  </div>
+  <div id="app"></div>
+  <footer>Envision Marketing · Client Onboarding Wizard</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* Set this to your hosted logo URL (PNG or SVG). Leave empty to show the text wordmark. */
+const LOGO_URL = '';
+
+/* =========================================================================
+   DATA: services the agency sells, and the access modules each one needs
+   ========================================================================= */
+const SERVICES = [
+  {id:'google_ads', nm:'Google Ads',                  sb:'Paid Search',            access:['google_ads','ga4','gtm','creative']},
+  {id:'bing',       nm:'Microsoft / Bing Ads',        sb:'Paid Search',            access:['ms_ads','ga4','creative']},
+  {id:'apple',      nm:'Apple Ads',                   sb:'Paid Search',            access:['apple_ads','creative']},
+  {id:'meta',       nm:'Meta',                        sb:'Facebook & Instagram',   access:['meta','creative']},
+  {id:'linkedin',   nm:'LinkedIn Ads',                sb:'Professional Social',    access:['linkedin','creative']},
+  {id:'pinterest',  nm:'Pinterest Ads',               sb:'Visual Discovery',       access:['pinterest','creative']},
+  {id:'reddit',     nm:'Reddit Ads',                  sb:'Niche & Community',      access:['reddit','creative']},
+  {id:'snapchat',   nm:'Snapchat Ads',                sb:'AR & Gen Z',             access:['snapchat','creative']},
+  {id:'tiktok',     nm:'TikTok Ads',                  sb:'Short-Form Content',     access:['tiktok','creative']},
+  {id:'x',          nm:'X / Twitter Ads',             sb:'Real-Time Engagement',   access:['x_ads','creative']},
+  {id:'youtube',    nm:'YouTube Ads',                 sb:'Video',                  access:['google_ads','youtube','ga4','creative']},
+  {id:'ctv',        nm:'Connected TV (CTV)',          sb:'Programmatic',           access:['creative','gtm']},
+  {id:'preroll',    nm:'Video Pre-Roll',              sb:'Programmatic',           access:['creative','gtm']},
+  {id:'display',    nm:'Display',                     sb:'Programmatic',           access:['creative','gtm']},
+  {id:'dooh',       nm:'Digital Out-Of-Home',         sb:'DOOH',                   access:['creative']},
+  {id:'audio',      nm:'Digital Audio',               sb:'Podcasts, Spotify, Pandora', access:['creative']},
+  {id:'aisearch',   nm:'AI Search & Conversational',  sb:'ChatGPT & Perplexity',   access:['gsc','ga4','gbp']},
+  {id:'seo',        nm:'SEO',                         sb:'Organic Search',         access:['ga4','gsc','gbp','website_cms']},
+  {id:'maint',      nm:'Website Maintenance',         sb:'Ongoing care & updates', access:['website_cms','domain_hosting']},
+];
+
+/* Agency-side values the client needs to see inside the instructions. */
+const AGENCY_FIELDS = [
+  {key:'name',     label:'Agency name',                                   ph:'Envision Marketing', def:'Envision Marketing'},
+  {key:'email',    label:'Send completed onboardings to',                 ph:'onboarding@yourdomain.com', type:'email'},
+  {key:'gEmail',   label:'Google access email (Analytics, Search Console, Business Profile, Tag Manager, YouTube)', ph:'analytics@yourdomain.com'},
+  {key:'adsEmail', label:'Team email for other ad platform invites (Microsoft, Snapchat, Reddit, Apple)', ph:'ads@yourdomain.com'},
+  {key:'mcc',      label:'Google Ads manager account (MCC) ID',           ph:'123-456-7890'},
+  {key:'metaBm',   label:'Meta Business Portfolio ID',                    ph:'1234567890123456'},
+  {key:'ttBc',     label:'TikTok Business Center ID',                     ph:'7000000000000000000'},
+  {key:'pinId',    label:'Pinterest business ID',                         ph:'123456789012'},
+  {key:'liName',   label:'LinkedIn admin (name as it appears on LinkedIn)', ph:'Jane Doe'},
+  {key:'xHandle',  label:'X / Twitter handle for ad account access',      ph:'@yourhandle'},
+  {key:'webhook',  label:'Webhook URL for submissions (optional: Zapier / Make catch hook)', ph:'https://hooks.zapier.com/hooks/catch/...', type:'url'},
+];
+
+/* Access modules. {{key}} placeholders are filled from the agency values above. */
+const MODULES = {
+  google_ads:{
+    nm:'Google Ads', ico:'🎯', url:'https://ads.google.com',
+    why:'We manage your campaigns from our manager account. You keep full ownership of the account and billing, and you can remove us at any time.',
+    steps:[
+      'Sign in at <a href="https://ads.google.com" target="_blank" rel="noopener">ads.google.com</a>. Your <b>Customer ID</b> is in the top right corner (format <code>123-456-7890</code>). Paste it below.',
+      'Once we have your ID we will send a link request from our manager account <span class="idbox" data-copy="{{mcc}}">{{mcc}}</span>. Google will email you about it.',
+      'To accept: in Google Ads click <code>Admin</code> (gear icon) &rarr; <code>Access and security</code> &rarr; <code>Managers</code> tab, find {{name}} and click <b>Accept</b>.<small>Prefer not to wait? Under the <code>Users</code> tab click the plus, add <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span> with <b>Admin</b> access.</small>',
+    ],
+    fields:[
+      {key:'has', type:'radio', label:'Do you already have a Google Ads account?', opts:['Yes','No, please create one for us']},
+      {key:'cid', label:'Google Ads Customer ID', ph:'123-456-7890', help:'10 digits, shown top right in Google Ads.', showIf:{has:'Yes'}},
+      {key:'conv', type:'radio', label:'Is conversion tracking already set up (calls, forms, purchases)?', opts:['Yes','No','Not sure'], showIf:{has:'Yes'}},
+    ],
+    confirm:'I have entered my Customer ID and accepted the manager link request (or added the user).',
+  },
+  ga4:{
+    nm:'Google Analytics (GA4)', ico:'📈', url:'https://analytics.google.com',
+    why:'Analytics shows us what happens after someone clicks: calls, forms, purchases. We need Editor access to set up and read conversions.',
+    steps:[
+      'Go to <a href="https://analytics.google.com" target="_blank" rel="noopener">analytics.google.com</a> and click <code>Admin</code> (gear icon, bottom left).',
+      'In the <b>Property</b> column click <code>Property access management</code>.',
+      'Click the blue <b>+</b> &rarr; <code>Add users</code>. Enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>, choose the <b>Editor</b> role and click <b>Add</b>.',
+      'Still in Admin, open <code>Property details</code> and copy the <b>Property ID</b> (numbers only, top right). Paste it below.',
+    ],
+    fields:[
+      {key:'has', type:'radio', label:'Do you have Google Analytics on your website?', opts:['Yes','No / not sure, please set it up']},
+      {key:'prop', label:'GA4 Property ID', ph:'e.g. 123456789', showIf:{has:'Yes'}},
+    ],
+    confirm:'I have added the email with Editor access.',
+  },
+  gsc:{
+    nm:'Google Search Console', ico:'🔍', url:'https://search.google.com/search-console',
+    why:'Search Console tells us how Google sees your site: which searches show it, which pages have errors, and what is indexed.',
+    steps:[
+      'Go to <a href="https://search.google.com/search-console" target="_blank" rel="noopener">search.google.com/search-console</a> and pick your website in the top left.',
+      'Open <code>Settings</code> in the left menu &rarr; <code>Users and permissions</code> &rarr; <b>Add user</b>.',
+      'Enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>, set permission to <b>Full</b>, click <b>Add</b>.',
+    ],
+    fields:[
+      {key:'has', type:'radio', label:'Is your site already verified in Search Console?', opts:['Yes','No / not sure']},
+      {key:'prop', label:'Property shown in Search Console', ph:'e.g. yourdomain.com or https://www.yourdomain.com/', showIf:{has:'Yes'}},
+    ],
+    confirm:'I have added the email with Full permission.',
+  },
+  gbp:{
+    nm:'Google Business Profile', ico:'📍', url:'https://business.google.com',
+    why:'Your Business Profile is the listing on Google Maps and in local search. We manage posts, photos, reviews and categories from it.',
+    steps:[
+      'Sign in to Google with the account that owns the listing, then search your business name on Google and open the profile panel, or go to <a href="https://business.google.com" target="_blank" rel="noopener">business.google.com</a>.',
+      'Click the three-dot menu &rarr; <code>Business Profile settings</code> &rarr; <code>People and access</code>.',
+      'Click <b>Add</b>, enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>, choose <b>Manager</b>, click <b>Invite</b>.<small>Multiple locations? Do this for each, or share the Business Group with us.</small>',
+    ],
+    fields:[
+      {key:'bname', label:'Business name exactly as listed on Google', ph:'Acme Plumbing'},
+      {key:'locs', label:'How many locations?', ph:'1'},
+      {key:'has', type:'radio', label:'Is the listing verified and do you have login access?', opts:['Yes','Not verified','Someone else owns it']},
+    ],
+    confirm:'I have invited the email as Manager.',
+  },
+  gtm:{
+    nm:'Google Tag Manager', ico:'🏷️', url:'https://tagmanager.google.com',
+    why:'Tag Manager lets us add tracking pixels and conversion tags without touching your website code every time.',
+    steps:[
+      'Go to <a href="https://tagmanager.google.com" target="_blank" rel="noopener">tagmanager.google.com</a> and open your container, then click <code>Admin</code>.',
+      'Under <b>Account</b> click <code>User Management</code> &rarr; <b>+</b> &rarr; <code>Add users</code>.',
+      'Enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>. Account permission <b>Admin</b>, container permission <b>Publish</b>. Click <b>Invite</b>.',
+    ],
+    fields:[
+      {key:'has', type:'radio', label:'Do you have Tag Manager on your site?', opts:['Yes','No / not sure, please set it up']},
+      {key:'cont', label:'Container ID', ph:'GTM-XXXXXXX', showIf:{has:'Yes'}},
+    ],
+    confirm:'I have invited the email with Admin / Publish permissions.',
+  },
+  meta:{
+    nm:'Meta (Facebook & Instagram)', ico:'📣', url:'https://business.facebook.com/settings',
+    why:'Access is granted through your Business Portfolio (Business Manager) as a partner. You stay the owner of the Page, ad account and pixel.',
+    steps:[
+      'Go to <a href="https://business.facebook.com/settings" target="_blank" rel="noopener">business.facebook.com/settings</a> and choose your Business Portfolio.<small>No portfolio yet? Create one at <a href="https://business.facebook.com/overview" target="_blank" rel="noopener">business.facebook.com/overview</a> and add your Page, ad account and Instagram account to it first.</small>',
+      'In the left menu open <code>Users</code> &rarr; <code>Partners</code> &rarr; <b>Add</b> &rarr; <b>Give a partner access to your assets</b>.',
+      'Enter our Business Portfolio ID <span class="idbox" data-copy="{{metaBm}}">{{metaBm}}</span> and click <b>Next</b>.',
+      'Select the assets and give these permissions: <b>Ad accounts</b> &rarr; Manage campaigns (or Full control). <b>Pages</b> &rarr; Full control (or at least Content and Ads). <b>Instagram accounts</b> &rarr; Full control (or Ads). <b>Pixels / Datasets</b> &rarr; Manage. <b>Catalogs</b> &rarr; Manage, if you sell products. Click <b>Save changes</b>.',
+      'Make sure the ad account has a payment method under <code>Billing &amp; payments</code>.',
+    ],
+    fields:[
+      {key:'adacct', label:'Ad account ID', ph:'act_1234567890 or 1234567890', help:'Business Settings → Accounts → Ad accounts.'},
+      {key:'page', label:'Facebook Page URL', ph:'https://facebook.com/yourpage', type:'url'},
+      {key:'ig', label:'Instagram handle', ph:'@yourbusiness'},
+      {key:'pixel', type:'radio', label:'Is a Meta Pixel installed on your website?', opts:['Yes','No','Not sure']},
+    ],
+    confirm:'I have added the partner and assigned the assets.',
+  },
+  ms_ads:{
+    nm:'Microsoft Advertising (Bing)', ico:'🪟', url:'https://ads.microsoft.com',
+    why:'Like Google Ads, we link your account to our manager account so you keep ownership and billing.',
+    steps:[
+      'Sign in at <a href="https://ads.microsoft.com" target="_blank" rel="noopener">ads.microsoft.com</a>. Your <b>Account number</b> (format <code>X1234567</code>) is under <code>Settings</code> (gear) &rarr; <code>Accounts</code>. Paste it below.',
+      'We will send a manager account link request. Accept it under <code>Settings</code> &rarr; <code>Accounts</code> &rarr; <code>Requests</code>, or through the email from Microsoft Advertising.<small>Alternative: <code>Settings</code> &rarr; <code>Account access</code> &rarr; <code>Users</code> &rarr; Invite <span class="idbox" data-copy="{{adsEmail}}">{{adsEmail}}</span> as Super Admin.</small>',
+    ],
+    fields:[
+      {key:'has', type:'radio', label:'Do you have a Microsoft Advertising account?', opts:['Yes','No, please create one for us']},
+      {key:'acct', label:'Account number', ph:'X1234567', showIf:{has:'Yes'}},
+    ],
+    confirm:'I have entered my account number and accepted the request (or invited the user).',
+  },
+  apple_ads:{
+    nm:'Apple Ads (App Store)', ico:'🍎', url:'https://ads.apple.com',
+    why:'Apple Ads campaigns run from your organization so spend and app data stay with you.',
+    steps:[
+      'Sign in at <a href="https://ads.apple.com" target="_blank" rel="noopener">ads.apple.com</a>, open your account name (top right) &rarr; <code>Account Settings</code> &rarr; <code>User Management</code>.',
+      'Click <b>Invite Users</b>, enter <span class="idbox" data-copy="{{adsEmail}}">{{adsEmail}}</span>, choose role <b>Admin</b> or <b>Campaign Group Manager</b> and pick the campaign group.',
+      'Tell us the app name and your Organization ID below.',
+    ],
+    fields:[
+      {key:'app', label:'App name (as on the App Store)', ph:'Acme Rewards'},
+      {key:'org', label:'Organization ID', ph:'Found under Account Settings'},
+    ],
+    confirm:'I have invited the user.',
+  },
+  linkedin:{
+    nm:'LinkedIn Ads', ico:'💼', url:'https://www.linkedin.com/campaignmanager',
+    why:'We need a role on the ad account to run campaigns, and a role on the Company Page to sponsor content.',
+    steps:[
+      'Open <a href="https://www.linkedin.com/campaignmanager" target="_blank" rel="noopener">Campaign Manager</a>, select the ad account, click the gear &rarr; <code>Manage access</code>.',
+      'Click <b>Add user</b>, search for <span class="idbox" data-copy="{{liName}}">{{liName}}</span> (connect with us first if the search comes up empty), choose <b>Account Manager</b>, save.',
+      'Company Page: open the Page as admin &rarr; <code>Settings</code> &rarr; <code>Manage admins</code> &rarr; <b>Add admin</b> &rarr; <span class="idbox" data-copy="{{liName}}">{{liName}}</span> as <b>Content admin</b>.',
+    ],
+    fields:[
+      {key:'adacct', label:'Ad account ID', ph:'123456789'},
+      {key:'page', label:'Company Page URL', ph:'https://linkedin.com/company/yourcompany', type:'url'},
+    ],
+    confirm:'I have added the account and page roles.',
+  },
+  pinterest:{
+    nm:'Pinterest Ads', ico:'📌', url:'https://business.pinterest.com',
+    why:'Partner access keeps your business account and tag under your ownership.',
+    steps:[
+      'Go to <a href="https://business.pinterest.com" target="_blank" rel="noopener">business.pinterest.com</a> &rarr; <code>Business access</code>.',
+      'Open <code>Partners</code> &rarr; <b>Add partner</b> &rarr; enter <span class="idbox" data-copy="{{pinId}}">{{pinId}}</span> &rarr; <b>Invite this partner to access your assets</b>.',
+      'Assign the <b>Ad account</b> (Admin or Campaign manager), the <b>Pinterest tag</b>, and the <b>Catalog</b> if you have one.',
+    ],
+    fields:[
+      {key:'adacct', label:'Ad account ID', ph:'549755885175'},
+      {key:'profile', label:'Pinterest profile URL', ph:'https://pinterest.com/yourbusiness', type:'url'},
+    ],
+    confirm:'I have added the partner and assigned the assets.',
+  },
+  reddit:{
+    nm:'Reddit Ads', ico:'👽', url:'https://ads.reddit.com',
+    why:'A member seat on your ad account lets us build and manage campaigns.',
+    steps:[
+      'Go to <a href="https://ads.reddit.com" target="_blank" rel="noopener">ads.reddit.com</a> &rarr; account menu &rarr; <code>Business settings</code> &rarr; <code>Members</code>.',
+      'Click <b>Invite member</b>, enter <span class="idbox" data-copy="{{adsEmail}}">{{adsEmail}}</span>, choose <b>Admin</b> or <b>Campaign manager</b>.',
+    ],
+    fields:[ {key:'adacct', label:'Ad account ID', ph:'a2_abc123'} ],
+    confirm:'I have sent the invite.',
+  },
+  snapchat:{
+    nm:'Snapchat Ads', ico:'👻', url:'https://ads.snapchat.com',
+    why:'A member seat on your Business account lets us run ads and read the Snap Pixel.',
+    steps:[
+      'Go to <a href="https://ads.snapchat.com" target="_blank" rel="noopener">ads.snapchat.com</a> &rarr; <code>Business Settings</code> &rarr; <code>Members</code>.',
+      'Click <b>Invite Member</b>, enter <span class="idbox" data-copy="{{adsEmail}}">{{adsEmail}}</span>, role <b>Admin</b> (or Data Manager plus ad account Admin).',
+    ],
+    fields:[ {key:'adacct', label:'Ad account ID', ph:'00000000-0000-0000-0000-000000000000'} ],
+    confirm:'I have sent the invite.',
+  },
+  tiktok:{
+    nm:'TikTok Ads', ico:'🎵', url:'https://business.tiktok.com',
+    why:'Partner access through Business Center keeps the ad account, pixel and TikTok account yours.',
+    steps:[
+      'Go to <a href="https://business.tiktok.com" target="_blank" rel="noopener">business.tiktok.com</a> &rarr; <code>Partners</code> &rarr; <b>Add Partner</b> &rarr; enter <span class="idbox" data-copy="{{ttBc}}">{{ttBc}}</span>.',
+      'Assign assets: <b>Ad accounts</b> &rarr; Operator, <b>Pixels</b> &rarr; Operator, and the <b>TikTok account</b> if we will post for you.',
+    ],
+    fields:[
+      {key:'adacct', label:'Ad account ID', ph:'7000000000000000000'},
+      {key:'handle', label:'TikTok handle', ph:'@yourbusiness'},
+    ],
+    confirm:'I have added the partner and assigned the assets.',
+  },
+  x_ads:{
+    nm:'X / Twitter Ads', ico:'✖️', url:'https://ads.x.com',
+    why:'Ad account access on X is granted to a handle, not an email.',
+    steps:[
+      'Go to <a href="https://ads.x.com" target="_blank" rel="noopener">ads.x.com</a>, click your account name &rarr; <code>Edit access to account</code>.',
+      'Click <b>Add access</b>, enter <span class="idbox" data-copy="{{xHandle}}">{{xHandle}}</span>, choose <b>Account administrator</b> (or Ad manager) and tick <b>Can compose promotable Tweets</b>.',
+    ],
+    fields:[ {key:'handle', label:'Your X handle', ph:'@yourbusiness'} ],
+    confirm:'I have added the handle.',
+  },
+  youtube:{
+    nm:'YouTube Channel', ico:'▶️', url:'https://studio.youtube.com',
+    why:'Linking your channel to Google Ads lets us use your videos in ads and build audiences from viewers.',
+    steps:[
+      'Open <a href="https://studio.youtube.com" target="_blank" rel="noopener">YouTube Studio</a> &rarr; <code>Settings</code> &rarr; <code>Permissions</code> &rarr; <b>Invite</b> &rarr; <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span> as <b>Manager</b>.',
+      'Once Google Ads access is in place we will send a channel link request from the ad account. Approve it in YouTube Studio under <code>Settings</code> &rarr; <code>Channel</code> &rarr; <code>Advanced settings</code> &rarr; <b>Google Ads account linking</b>.',
+    ],
+    fields:[ {key:'channel', label:'Channel URL', ph:'https://youtube.com/@yourbusiness', type:'url'} ],
+    confirm:'I have invited the manager (I will approve the link request when it arrives).',
+  },
+  website_cms:{
+    nm:'Website Access', ico:'🌐', url:'',
+    why:'We need to edit pages, add tracking and fix technical SEO issues directly on the site.',
+    platformSteps:{
+      'Duda':        ['If {{name}} built or hosts your site, there is nothing to do here. Otherwise ask your current provider to add <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span> as a collaborator on the site.'],
+      'WordPress':   ['Sign in to your WordPress admin (usually <code>yourdomain.com/wp-admin</code>) &rarr; <code>Users</code> &rarr; <b>Add New</b>.','Enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>, role <b>Administrator</b>, and send the invite.'],
+      'Shopify':     ['Shopify admin &rarr; <code>Settings</code> &rarr; <code>Users and permissions</code>.','Under <b>Collaborators</b> share your <b>collaborator request code</b> with us below, or add <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span> as staff.'],
+      'Wix':         ['Wix dashboard &rarr; <code>Settings</code> &rarr; <code>Roles &amp; Permissions</code> &rarr; <b>Invite People</b>.','Enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>, role <b>Website Manager</b>.'],
+      'Squarespace': ['Squarespace &rarr; <code>Settings</code> &rarr; <code>Permissions</code> &rarr; <b>Invite Contributor</b>.','Enter <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span>, role <b>Administrator</b>.'],
+      'Webflow':     ['Webflow &rarr; <code>Site settings</code> &rarr; <code>Members</code> (or Workspace settings &rarr; Members).','Invite <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span> as <b>Site admin</b> or <b>Editor</b> with publish rights.'],
+      'Other / custom':['Tell us the platform and who built it below. Please do <b>not</b> type passwords into this form; we will send a secure link for sharing logins.'],
+    },
+    fields:[
+      {key:'platform', type:'select', label:'What platform is your website built on?', opts:['Duda','WordPress','Shopify','Wix','Squarespace','Webflow','Other / custom']},
+      {key:'builder', label:'Who built or currently manages the site?', ph:'Agency name, freelancer, in-house'},
+      {key:'extra', label:'Anything we should know (collaborator code, platform name, contact)', type:'textarea', ph:''},
+    ],
+    confirm:'I have granted access (or told you who to contact).',
+  },
+  domain_hosting:{
+    nm:'Domain & Hosting', ico:'🔑', url:'',
+    why:'Domain and DNS access is needed for site moves, email records, SSL and verification. We only ever change what we tell you about first.',
+    steps:[
+      'Tell us where the domain is registered and who hosts the site below.',
+      '<b>GoDaddy:</b> Account &rarr; <code>Delegate Access</code> &rarr; Invite <span class="idbox" data-copy="{{gEmail}}">{{gEmail}}</span> (Products, Domains &amp; DNS). <b>Cloudflare:</b> <code>Manage Account</code> &rarr; <code>Members</code> &rarr; Invite. <b>Namecheap:</b> <code>Profile</code> &rarr; <code>Share &amp; Transfer</code>.<small>Other registrars: most have a "share access" or "delegate" option. If not, we will send a secure link for sharing a login.</small>',
+    ],
+    fields:[
+      {key:'registrar', label:'Domain registrar', ph:'GoDaddy, Namecheap, Cloudflare, Squarespace Domains...'},
+      {key:'host', label:'Website host', ph:'Duda, WP Engine, SiteGround, Shopify...'},
+      {key:'dns', type:'radio', label:'Who manages your DNS today?', opts:['We do','Our web developer','Not sure']},
+    ],
+    confirm:'I have shared access or told you who manages it.',
+  },
+  creative:{
+    nm:'Brand & Creative Assets', ico:'🎨', url:'',
+    why:'Good ads start with your real logo, photos and offers. Links to shared folders are perfect; no need to upload here.',
+    steps:[
+      'Put your logo files (PNG or SVG), brand guidelines, and any photos or video into a shared folder (Google Drive, Dropbox, OneDrive) and set it to "anyone with the link can view".',
+      'Paste the folder links below, plus the pages you want traffic sent to and the offers you want promoted.',
+    ],
+    fields:[
+      {key:'logo', label:'Logo & brand guidelines folder link', ph:'https://drive.google.com/...', type:'url'},
+      {key:'media', label:'Photos / video / past ads folder link', ph:'https://...', type:'url'},
+      {key:'landing', label:'Landing pages to send traffic to', ph:'https://yourdomain.com/offer', type:'textarea'},
+      {key:'offers', label:'Current offers, promotions or key selling points', type:'textarea', ph:'Free estimates, 10% off first service, same-day appointments...'},
+      {key:'competitors', label:'Top competitors (names or websites)', type:'textarea', ph:''},
+    ],
+    confirm:'I have shared the folders and details above.',
+  },
+};
+
+const BUSINESS_FIELDS = [
+  {key:'company', label:'Business name', ph:'Acme Plumbing', req:true},
+  {key:'website', label:'Website', ph:'https://www.acmeplumbing.com', type:'url', req:true},
+  {key:'phone', label:'Main business phone', ph:'(555) 555-1234', type:'tel'},
+  {key:'address', label:'Business address', ph:'123 Main St, City, ST 00000'},
+  {key:'industry', label:'Industry / what you do', ph:'Residential plumbing and HVAC'},
+  {key:'areas', label:'Service area(s)', ph:'Las Vegas and Henderson, NV'},
+  {key:'contact', label:'Primary contact name', ph:'Jane Doe', req:true},
+  {key:'email', label:'Primary contact email', ph:'jane@acmeplumbing.com', type:'email', req:true},
+  {key:'cphone', label:'Primary contact phone', ph:'(555) 555-9876', type:'tel'},
+  {key:'goals', label:'What does success look like in the first 90 days?', type:'textarea', ph:'More booked estimates, lower cost per lead, rank for "plumber near me"...', full:true},
+];
+
+/* =========================================================================
+   HELPERS
+   ========================================================================= */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const dec = s => { try { s = s.replace(/-/g,'+').replace(/_/g,'/'); while (s.length % 4) s += '='; return JSON.parse(decodeURIComponent(escape(atob(s)))); } catch (e) { return null; } };
+const store = { get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }, del(k){ try { localStorage.removeItem(k); } catch(e){} } };
+let toastT; function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+function copy(text){ if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('Copied')); else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Copied'); } }
+function fill(tpl, agency){ return tpl.replace(/\{\{(\w+)\}\}/g, (m, k) => esc(agency[k] || '(ask us for this)')); }
+function hashOf(s){ let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+const SVG_TICK = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('.idbox'); if (b && b.dataset.copy) copy(b.dataset.copy);
+});
+
+/* =========================================================================
+   ADMIN MODE
+   ========================================================================= */
+const ADMIN_KEY = 'ev-onb-admin';
+function adminState(){
+  const saved = store.get(ADMIN_KEY, {});
+  const agency = Object.assign({}, saved.agency || {});
+  AGENCY_FIELDS.forEach(f => { if (agency[f.key] == null && f.def) agency[f.key] = f.def; });
+  return { client: saved.client || {name:'', contact:'', email:'', due:'', note:''}, services: saved.services || [], override: saved.override || {}, agency };
+}
+function computeAccess(services, override){
+  const auto = new Set();
+  services.forEach(id => { const s = SERVICES.find(x => x.id === id); if (s) s.access.forEach(a => auto.add(a)); });
+  const out = [];
+  Object.keys(MODULES).forEach(id => {
+    const on = override[id] != null ? override[id] : auto.has(id);
+    if (on) out.push(id);
+  });
+  return { list: out, auto };
+}
+function buildConfig(st){
+  const { list } = computeAccess(st.services, st.override);
+  const agency = {}; AGENCY_FIELDS.forEach(f => { const v = (st.agency[f.key] || '').trim(); if (v) agency[f.key] = v; });
+  return { v:1, client: st.client, services: st.services.slice(), access: list, agency };
+}
+function clientLink(cfg){ return location.origin + location.pathname + '#c=' + enc(cfg); }
+
+function renderAdmin(){
+  $('#modePill').textContent = 'Admin setup';
+  $('#title').textContent = 'Client Onboarding';
+  $('#subtitle').textContent = 'Set up what a client needs to give us, then send them one link.';
+  const st = adminState();
+  const app = $('#app');
+  app.innerHTML = `
+  <div class="grid">
+    <div class="panel" id="adminLeft">
+      <div class="sec">
+        <h2><span class="dot"></span>1. Client</h2>
+        <div class="f2">
+          <div class="f"><label>Client / business name</label><input type="text" data-c="name" value="${esc(st.client.name)}" placeholder="Acme Plumbing"></div>
+          <div class="f"><label>Contact first name</label><input type="text" data-c="contact" value="${esc(st.client.contact)}" placeholder="Jane"></div>
+          <div class="f"><label>Contact email (optional, prefilled for them)</label><input type="email" data-c="email" value="${esc(st.client.email)}" placeholder="jane@acmeplumbing.com"></div>
+          <div class="f"><label>Requested completion date (optional)</label><input type="date" data-c="due" value="${esc(st.client.due)}"></div>
+        </div>
+        <div class="f"><label>Welcome note (optional, shown on the first screen)</label><textarea data-c="note" placeholder="Excited to get started! Any questions, just reply to the email this came in.">${esc(st.client.note)}</textarea></div>
+      </div>
+      <div class="sec">
+        <h2><span class="dot"></span>2. Services we are doing for them <span class="count" id="svcCount"></span></h2>
+        <div class="opts" id="svcOpts">
+          ${SERVICES.map(s => `<button class="opt" type="button" data-svc="${s.id}" aria-pressed="${st.services.includes(s.id)}"><span class="nm">${esc(s.nm)}</span><span class="sb">${esc(s.sb)}</span><span class="tick">${SVG_TICK}</span></button>`).join('')}
+        </div>
+      </div>
+      <div class="sec">
+        <h2><span class="dot"></span>3. Access steps the client will see</h2>
+        <p class="muted" style="margin-bottom:10px">Picked automatically from the services above. Click a chip to remove it, or add extras from the list below.</p>
+        <div class="chips" id="accessChips"></div>
+        <details class="adv" style="margin-top:14px"><summary>Add other access steps</summary><div class="chips" id="extraChips"></div></details>
+      </div>
+      <div class="sec">
+        <h2><span class="dot"></span>4. Our account details (shown inside the instructions)</h2>
+        <p class="muted" style="margin-bottom:10px">Saved in this browser so you only fill this in once.</p>
+        <div class="f2">
+          ${AGENCY_FIELDS.map(f => `<div class="f${f.key==='webhook'?' full':''}" style="${f.key==='webhook'?'grid-column:1/-1':''}"><label>${esc(f.label)}</label><input type="${f.type||'text'}" data-a="${f.key}" value="${esc(st.agency[f.key]||'')}" placeholder="${esc(f.ph||'')}"></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <div class="sec">
+          <h2><span class="dot"></span>Client link</h2>
+          <p class="muted" style="margin-bottom:12px">Everything above is packed into this link. Nothing is stored on a server; the client's answers come back to you when they submit.</p>
+          <div class="linkbox"><input type="text" id="linkOut" readonly><button class="btn sec sm" id="copyLink" type="button">Copy</button></div>
+          <div class="actions" style="margin-top:12px">
+            <a class="btn pri" id="previewLink" href="#" target="_blank" rel="noopener">Preview as client</a>
+            <button class="btn sec" id="emailLink" type="button">Email it</button>
+          </div>
+          <div class="kv" style="margin-top:16px" id="adminSummary"></div>
+          <div class="actions" style="margin-top:16px"><button class="btn ghost sm" id="resetAdmin" type="button">Start a new client</button></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  function save(){ store.set(ADMIN_KEY, { client: st.client, services: st.services, override: st.override, agency: st.agency }); }
+  function refresh(){
+    const { list, auto } = computeAccess(st.services, st.override);
+    $('#svcCount').textContent = st.services.length ? `(${st.services.length} selected)` : '';
+    $('#accessChips').innerHTML = list.length ? list.map(id => `<button class="chip" type="button" aria-pressed="true" data-acc="${id}" title="Click to remove">${MODULES[id].ico} ${esc(MODULES[id].nm)} ${auto.has(id) ? '<span class="src">auto</span>' : '<span class="src">added</span>'}<span class="x">&times;</span></button>`).join('') : '<span class="muted">Select at least one service.</span>';
+    const extras = Object.keys(MODULES).filter(id => !list.includes(id));
+    $('#extraChips').innerHTML = extras.length ? extras.map(id => `<button class="chip" type="button" data-acc="${id}" aria-pressed="false">+ ${MODULES[id].ico} ${esc(MODULES[id].nm)}</button>`).join('') : '<span class="muted">All access steps are already included.</span>';
+    const cfg = buildConfig(st);
+    const link = clientLink(cfg);
+    $('#linkOut').value = link;
+    $('#previewLink').href = link;
+    const missing = AGENCY_FIELDS.filter(f => f.key !== 'webhook' && !cfg.agency[f.key] && list.some(id => (JSON.stringify(MODULES[id])).includes('{{' + f.key + '}}')));
+    $('#adminSummary').innerHTML = `
+      <div><span>Client</span><span>${esc(st.client.name || '(not set)')}</span></div>
+      <div><span>Services</span><span>${st.services.length}</span></div>
+      <div><span>Access steps</span><span>${list.length}</span></div>
+      <div><span>Link length</span><span>${link.length} chars</span></div>
+      ${missing.length ? `<div style="color:var(--warn)"><span>Missing agency values</span><span>${esc(missing.map(f => f.key).join(', '))}</span></div>` : ''}`;
+    save();
+  }
+  app.addEventListener('input', e => {
+    const t = e.target;
+    if (t.dataset.c != null) { st.client[t.dataset.c] = t.value; refresh(); }
+    if (t.dataset.a != null) { st.agency[t.dataset.a] = t.value; refresh(); }
+  });
+  app.addEventListener('click', e => {
+    const svc = e.target.closest('[data-svc]');
+    if (svc) { const id = svc.dataset.svc; const i = st.services.indexOf(id); if (i >= 0) st.services.splice(i, 1); else st.services.push(id); svc.setAttribute('aria-pressed', String(i < 0)); refresh(); return; }
+    const acc = e.target.closest('[data-acc]');
+    if (acc) { const id = acc.dataset.acc; const on = acc.getAttribute('aria-pressed') === 'true'; st.override[id] = !on; refresh(); return; }
+    if (e.target.id === 'copyLink') { copy($('#linkOut').value); return; }
+    if (e.target.id === 'emailLink') {
+      const link = $('#linkOut').value;
+      const name = st.client.contact || 'there';
+      const subj = `Getting started with ${st.agency.name || 'us'}: a few quick access steps`;
+      const body = `Hi ${name},\n\nWelcome aboard! To get your campaigns moving we need access to a few accounts. This link walks you through each one step by step and should take about 15 minutes:\n\n${link}\n\nYou can save progress and come back any time. Reply to this email if you get stuck.\n\nThanks,\n${st.agency.name || ''}`;
+      location.href = `mailto:${encodeURIComponent(st.client.email || '')}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+    if (e.target.id === 'resetAdmin') { if (confirm('Clear the client, services and overrides? Your agency details are kept.')) { st.client = {name:'',contact:'',email:'',due:'',note:''}; st.services = []; st.override = {}; save(); renderAdmin(); } }
+  });
+  refresh();
+}
+
+/* =========================================================================
+   CLIENT WIZARD MODE
+   ========================================================================= */
+function renderWizard(cfg){
+  const agency = cfg.agency || {};
+  const key = 'ev-onb-' + hashOf(JSON.stringify(cfg));
+  const saved = store.get(key, {});
+  const data = saved.data || { business: { company: cfg.client.name || '', contact: cfg.client.contact || '', email: cfg.client.email || '' }, mod: {} };
+  let cur = saved.cur || 0;
+  let submitted = saved.submitted || false;
+
+  $('#modePill').textContent = (agency.name || 'Agency') + ' onboarding';
+  $('#title').textContent = `Welcome${cfg.client.contact ? ', ' + cfg.client.contact : ''}!`;
+  $('#subtitle').textContent = `Let's get ${cfg.client.name || 'your business'} set up. Takes about 15 minutes, and you can come back any time.`;
+
+  const access = (cfg.access || []).filter(id => MODULES[id]);
+  const steps = [{id:'welcome', nm:'Welcome', ico:'👋'}, {id:'business', nm:'Your business', ico:'🏢'}]
+    .concat(access.map(id => ({id, nm:MODULES[id].nm, ico:MODULES[id].ico, mod:true})))
+    .concat([{id:'review', nm:'Review & submit', ico:'✅'}]);
+
+  function save(){ store.set(key, { data, cur, submitted }); }
+  function modData(id){ return data.mod[id] || (data.mod[id] = {}); }
+  function visibleField(f, d){ if (!f.showIf) return true; return Object.keys(f.showIf).every(k => d[k] === f.showIf[k]); }
+  function modStatus(id){
+    const d = modData(id); const m = MODULES[id];
+    if (d.done) return 'done';
+    const filled = (m.fields || []).some(f => d[f.key]);
+    return filled || d.blocker ? 'part' : '';
+  }
+  function bizStatus(){ const miss = BUSINESS_FIELDS.filter(f => f.req && !(data.business[f.key] || '').trim()); return miss.length ? (BUSINESS_FIELDS.some(f => data.business[f.key]) ? 'part' : '') : 'done'; }
+  function stepStatus(s){ if (s.id === 'welcome') return cur > 0 ? 'done' : ''; if (s.id === 'business') return bizStatus(); if (s.id === 'review') return submitted ? 'done' : ''; return modStatus(s.id); }
+
+  function fieldHtml(f, d, prefix){
+    const v = d[f.key] || '';
+    const id = `${prefix}_${f.key}`;
+    const help = f.help ? `<div class="help">${esc(f.help)}</div>` : '';
+    if (f.type === 'radio') return `<div class="f" data-fw="${f.key}"><label>${esc(f.label)}</label><div class="radios">${f.opts.map(o => `<label><input type="radio" name="${id}" data-k="${f.key}" value="${esc(o)}" ${v === o ? 'checked' : ''}>${esc(o)}</label>`).join('')}</div>${help}</div>`;
+    if (f.type === 'select') return `<div class="f" data-fw="${f.key}"><label for="${id}">${esc(f.label)}</label><select id="${id}" data-k="${f.key}"><option value="">Choose...</option>${f.opts.map(o => `<option ${v === o ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>${help}</div>`;
+    if (f.type === 'textarea') return `<div class="f" data-fw="${f.key}" style="${f.full?'grid-column:1/-1':''}"><label for="${id}">${esc(f.label)}</label><textarea id="${id}" data-k="${f.key}" placeholder="${esc(f.ph||'')}">${esc(v)}</textarea>${help}</div>`;
+    return `<div class="f" data-fw="${f.key}" style="${f.full?'grid-column:1/-1':''}"><label for="${id}">${esc(f.label)}${f.req ? ' <span style="color:var(--bad)">*</span>' : ''}</label><input id="${id}" type="${f.type || 'text'}" data-k="${f.key}" value="${esc(v)}" placeholder="${esc(f.ph||'')}">${help}<div class="errmsg hidden">Required</div></div>`;
+  }
+
+  function bodyHtml(s){
+    if (s.id === 'welcome') {
+      const svcNames = (cfg.services || []).map(id => (SERVICES.find(x => x.id === id) || {}).nm).filter(Boolean);
+      return `<div class="sec">
+        <h3>Here's what we'll set up together</h3>
+        <p class="lead">${esc(agency.name || 'We')} will be handling <b>${esc(svcNames.join(', ') || 'your marketing')}</b>. To do that well we need access to a few of your accounts. This wizard shows you exactly where to click for each one.</p>
+        ${cfg.client.note ? `<div class="note">${esc(cfg.client.note)}</div>` : ''}
+        <div class="welcome-list">
+          ${access.map(id => `<div><span class="emoji">${MODULES[id].ico}</span><span>${esc(MODULES[id].nm)}<small>About 2 to 4 minutes</small></span></div>`).join('')}
+        </div>
+        <div class="note ok"><b>Good to know:</b> you always keep ownership of your accounts. We are added as a manager or partner, and you can remove us at any time. We will never ask for your passwords in this form.</div>
+        ${cfg.client.due ? `<p class="muted">Requested completion date: <b>${esc(cfg.client.due)}</b></p>` : ''}
+      </div>`;
+    }
+    if (s.id === 'business') {
+      return `<div class="sec"><h3>Tell us about your business</h3><p class="lead">The basics we use on every platform. Fields marked * are required.</p>
+        <div class="f2" style="margin-top:18px" id="bizFields">${BUSINESS_FIELDS.map(f => fieldHtml(f, data.business, 'biz')).join('')}</div></div>`;
+    }
+    if (s.id === 'review') {
+      const rows = steps.filter(x => x.mod || x.id === 'business').map((x, i) => { const stt = stepStatus(x); const idx = steps.indexOf(x); return `<div class="row"><span class="st ${stt}">${stt === 'done' ? '✓' : stt === 'part' ? '!' : ''}</span><div><b>${x.ico} ${esc(x.nm)}</b><small>${stt === 'done' ? 'Complete' : stt === 'part' ? 'Started, not marked done' : 'Not started'}</small></div><button class="edit" type="button" data-go="${idx}">Edit</button></div>`; }).join('');
+      const pending = steps.filter(x => x.mod && stepStatus(x.id ? x : x) !== 'done');
+      return `<div class="sec"><h3>${submitted ? 'Thanks, we have it!' : 'Almost there'}</h3>
+        <p class="lead">${submitted ? `Your onboarding was sent to ${esc(agency.name || 'us')}. You can still come back to this link to update anything.` : 'Check the list below. Anything not marked complete is fine to submit; just tell us where you got stuck and we will help.'}</p>
+        <div class="rev" style="margin-top:16px">${rows}</div>
+        ${pending.length && !submitted ? `<div class="note warn"><b>${pending.length} step${pending.length > 1 ? 's' : ''} not marked done.</b> That's OK. Add a note on each one so we know what to follow up on.</div>` : ''}
+        <div class="actions" style="margin-top:18px">
+          <button class="btn pri" id="submitBtn" type="button">${submitted ? 'Send again' : 'Submit onboarding'}</button>
+          <button class="btn sec" id="copySummary" type="button">Copy summary</button>
+          <button class="btn sec" id="downloadJson" type="button">Download JSON</button>
+        </div>
+        <div id="submitStatus" class="muted" style="margin-top:10px"></div>
+        <details class="adv" style="margin-top:16px"><summary>See what will be sent</summary><textarea class="summary" id="summaryBox" readonly>${esc(summaryText())}</textarea></details>
+      </div>`;
+    }
+    const m = MODULES[s.id]; const d = modData(s.id);
+    let stepsArr = m.steps || [];
+    if (m.platformSteps) { const p = d.platform || ''; stepsArr = m.platformSteps[p] || ['Choose your website platform below to see the matching instructions.']; }
+    return `<div class="sec">
+      <h3>${m.ico} ${esc(m.nm)}</h3>
+      <p class="why">${esc(m.why)}</p>
+      ${m.url ? `<a class="platform-link" href="${esc(m.url)}" target="_blank" rel="noopener">Open ${esc(m.nm)} in a new tab &rarr;</a>` : ''}
+      ${m.platformSteps ? `<div class="f2" style="margin-top:14px">${(m.fields || []).filter(f => f.key === 'platform').map(f => fieldHtml(f, d, s.id)).join('')}</div>` : ''}
+      <div class="steps">${stepsArr.map(t => `<div class="step"><p>${fill(t, Object.assign({name: agency.name || 'our team'}, agency))}</p></div>`).join('')}</div>
+      <div class="f2">${(m.fields || []).filter(f => f.key !== 'platform').map(f => `<div data-fwrap="${f.key}" class="${visibleField(f, d) ? '' : 'hidden'}" style="${f.type==='textarea'?'grid-column:1/-1':''}">${fieldHtml(f, d, s.id)}</div>`).join('')}</div>
+      <label class="check"><input type="checkbox" data-k="done" ${d.done ? 'checked' : ''}><div><b>${esc(m.confirm)}</b><span>Tick this when the step is done. Not able to right now? Leave it and tell us below.</span></div></label>
+      <div class="f" style="margin-top:12px"><label>Questions or blockers for this step (optional)</label><textarea data-k="blocker" placeholder="e.g. I don't have the login, our web guy does.">${esc(d.blocker || '')}</textarea></div>
+    </div>`;
+  }
+
+  function summaryObj(){
+    return {
+      submittedAt: new Date().toISOString(),
+      client: cfg.client, services: (cfg.services || []).map(id => (SERVICES.find(x => x.id === id) || {nm:id}).nm),
+      business: data.business,
+      access: access.map(id => { const m = MODULES[id]; const d = modData(id); const o = { module: m.nm, done: !!d.done }; (m.fields || []).forEach(f => { if (d[f.key]) o[f.label] = d[f.key]; }); if (d.blocker) o.blocker = d.blocker; return o; }),
+    };
+  }
+  function summaryText(){
+    const o = summaryObj(); const L = [];
+    L.push(`ONBOARDING: ${o.client.name || o.business.company || ''}`); L.push(`Submitted: ${o.submittedAt}`); L.push(`Services: ${o.services.join(', ')}`); L.push('');
+    L.push('BUSINESS'); BUSINESS_FIELDS.forEach(f => { if (o.business[f.key]) L.push(`  ${f.label}: ${o.business[f.key]}`); }); L.push('');
+    o.access.forEach(a => { L.push(`${a.done ? '[x]' : '[ ]'} ${a.module}`); Object.keys(a).forEach(k => { if (k !== 'module' && k !== 'done' && k !== 'blocker') L.push(`    ${k}: ${a[k]}`); }); if (a.blocker) L.push(`    BLOCKER: ${a.blocker}`); });
+    return L.join('\n');
+  }
+
+  function render(){
+    const s = steps[cur];
+    const done = steps.filter(x => stepStatus(x) === 'done').length;
+    const pct = Math.round((done / steps.length) * 100);
+    $('#app').innerHTML = `
+    <div class="grid wiz">
+      <div class="side"><div class="panel">
+        <div class="plab"><span>Progress</span><span>${pct}%</span></div>
+        <div class="prog"><i style="width:${pct}%"></i></div>
+        <div class="nav">${steps.map((x, i) => { const stt = stepStatus(x); return `<button type="button" data-go="${i}" class="${i === cur ? 'cur' : ''}"><span class="st ${stt}">${stt === 'done' ? '✓' : stt === 'part' ? '!' : i + 1}</span><span class="lbl">${esc(x.nm)}</span></button>`; }).join('')}</div>
+        <p class="muted" style="margin-top:12px;font-size:12px">Progress is saved in this browser automatically.</p>
+      </div></div>
+      <div class="panel" id="stepPanel">
+        ${bodyHtml(s)}
+        <div class="sec actions">
+          <button class="btn sec" id="prevBtn" type="button" ${cur === 0 ? 'disabled' : ''}>&larr; Back</button>
+          <span class="muted">Step ${cur + 1} of ${steps.length}</span>
+          <span class="spacer"></span>
+          ${cur < steps.length - 1 ? `<button class="btn pri" id="nextBtn" type="button">${cur === 0 ? "Let's go" : 'Save & continue'} &rarr;</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+    save();
+    const curBtn = $('.nav button.cur'); if (curBtn && curBtn.scrollIntoView) curBtn.scrollIntoView({block:'nearest', inline:'center'});
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function validateBusiness(){
+    let ok = true;
+    BUSINESS_FIELDS.filter(f => f.req).forEach(f => {
+      const w = $(`#bizFields [data-fw="${f.key}"]`); const bad = !(data.business[f.key] || '').trim();
+      if (w) { w.classList.toggle('err', bad); const m = $('.errmsg', w); if (m) m.classList.toggle('hidden', !bad); }
+      if (bad) ok = false;
+    });
+    if (!ok) toast('Please fill in the required fields');
+    return ok;
+  }
+  function go(i){ if (steps[cur].id === 'business' && i > cur && !validateBusiness()) return; cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
+
+  const app = $('#app');
+  app.addEventListener('input', e => {
+    const t = e.target; if (t.dataset.k == null) return;
+    const s = steps[cur];
+    if (s.id === 'business') { data.business[t.dataset.k] = t.value; }
+    else if (s.mod) {
+      const d = modData(s.id);
+      d[t.dataset.k] = t.type === 'checkbox' ? t.checked : t.value;
+      const m = MODULES[s.id];
+      (m.fields || []).forEach(f => { const w = $(`[data-fwrap="${f.key}"]`); if (w) w.classList.toggle('hidden', !visibleField(f, d)); });
+      if (t.dataset.k === 'platform') { save(); render(); return; }
+    }
+    save();
+  });
+  app.addEventListener('change', e => { const t = e.target; if (t.dataset.k != null && (t.type === 'checkbox' || t.type === 'radio' || t.tagName === 'SELECT')) t.dispatchEvent(new Event('input', {bubbles:true})); });
+  app.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]'); if (g) { go(+g.dataset.go); return; }
+    if (e.target.id === 'nextBtn') { go(cur + 1); return; }
+    if (e.target.id === 'prevBtn') { go(cur - 1); return; }
+    if (e.target.id === 'copySummary') { copy(summaryText()); return; }
+    if (e.target.id === 'downloadJson') {
+      const blob = new Blob([JSON.stringify(summaryObj(), null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `onboarding-${(cfg.client.name || 'client').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.json`; a.click(); return;
+    }
+    if (e.target.id === 'submitBtn') submit();
+  });
+
+  async function submit(){
+    const btn = $('#submitBtn'); const status = $('#submitStatus');
+    btn.disabled = true; status.textContent = 'Sending...';
+    const payload = summaryObj(); let sent = false;
+    if (agency.webhook) {
+      try { const r = await fetch(agency.webhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); sent = r.ok; }
+      catch (err) { try { await fetch(agency.webhook, {method:'POST', mode:'no-cors', body: JSON.stringify(payload)}); sent = true; } catch (e2) { sent = false; } }
+    }
+    if (!sent && agency.email) {
+      const subj = `Onboarding submitted: ${cfg.client.name || data.business.company || ''}`;
+      const body = summaryText();
+      const url = `mailto:${encodeURIComponent(agency.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+      if (url.length < 1900) { location.href = url; sent = true; status.textContent = 'Your email app should open with the summary. Press send to finish.'; }
+      else { copy(body); status.textContent = `The summary is copied to your clipboard. Please paste it into an email to ${agency.email}.`; sent = true; }
+    } else if (sent) { status.textContent = 'Sent. Thank you!'; }
+    if (!sent) { status.textContent = 'Could not send automatically. Use "Copy summary" and email it to us.'; }
+    submitted = sent; btn.disabled = false; save(); if (sent) render();
+  }
+
+  render();
+}
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+function boot(){
+  const brand = $('#brand');
+  brand.innerHTML = LOGO_URL ? `<img src="${esc(LOGO_URL)}" alt="Envision Marketing">` : '<span class="wm">envision<span>.</span></span>';
+  brand.href = location.pathname;
+  const h = location.hash || '';
+  const m = h.match(/[#&]c=([^&]+)/);
+  if (m) {
+    const cfg = dec(m[1]);
+    if (cfg && cfg.v === 1) { renderWizard(cfg); return; }
+    $('#app').innerHTML = '<div class="panel"><div class="sec"><h3>This link looks broken</h3><p class="lead">Please ask us to send a fresh onboarding link.</p></div></div>';
+    return;
+  }
+  renderAdmin();
+}
+window.addEventListener('hashchange', boot);
+boot();
+</script>
+</body>
+</html>
