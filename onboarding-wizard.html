@@ -161,6 +161,8 @@
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:50}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .muted{color:var(--muted);font-size:13px}
+  .previewbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff8ec;border:1.5px solid #f1d7a6;border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13.5px;color:var(--gray)}
+  .previewbar .spacer{flex:1}
   .hidden{display:none!important}
   details.adv summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--blue);margin-bottom:10px}
   .count{font-size:12.5px;color:var(--muted);font-weight:600}
@@ -511,6 +513,7 @@ let toastT; function toast(msg){ const t = $('#toast'); t.textContent = msg; t.c
 function copy(text){ if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('Copied')); else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Copied'); } }
 function fill(tpl, agency){ return tpl.replace(/\{\{(\w+)\}\}/g, (m, k) => esc(agency[k] || '(ask us for this)')); }
 function hashOf(s){ let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+function freshApp(){ const old = $('#app'); const n = old.cloneNode(false); old.replaceWith(n); return n; }
 const SVG_TICK = '<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
 
 document.addEventListener('click', e => {
@@ -549,7 +552,7 @@ function renderAdmin(){
   $('#title').textContent = 'Client Onboarding';
   $('#subtitle').textContent = 'Set up what a client needs to give us, then send them one link.';
   const st = adminState();
-  const app = $('#app');
+  const app = freshApp();
   app.innerHTML = `
   <div class="grid">
     <div class="panel" id="adminLeft">
@@ -587,10 +590,10 @@ function renderAdmin(){
       <div class="panel">
         <div class="sec">
           <h2><span class="dot"></span>Client link</h2>
-          <p class="muted" style="margin-bottom:12px">Everything above is packed into this link. Nothing is stored on a server; the client's answers come back to you when they submit.</p>
+          <p class="muted" style="margin-bottom:12px">Everything above is packed into this link. It works once this page is hosted on your own site. Use Preview to test the client view right here.</p>
           <div class="linkbox"><input type="text" id="linkOut" readonly><button class="btn sec sm" id="copyLink" type="button">Copy</button></div>
           <div class="actions" style="margin-top:12px">
-            <a class="btn pri" id="previewLink" href="#" target="_blank" rel="noopener">Preview as client</a>
+            <button class="btn pri" id="previewBtn" type="button">Preview as client</button>
             <button class="btn sec" id="emailLink" type="button">Email it</button>
           </div>
           <div class="kv" style="margin-top:16px" id="adminSummary"></div>
@@ -610,7 +613,6 @@ function renderAdmin(){
     const cfg = buildConfig(st);
     const link = clientLink(cfg);
     $('#linkOut').value = link;
-    $('#previewLink').href = link;
     const missing = AGENCY_FIELDS.filter(f => f.key !== 'webhook' && !cfg.agency[f.key] && list.some(id => (JSON.stringify(MODULES[id])).includes('{{' + f.key + '}}')));
     $('#adminSummary').innerHTML = `
       <div><span>Client</span><span>${esc(st.client.name || '(not set)')}</span></div>
@@ -630,6 +632,7 @@ function renderAdmin(){
     if (svc) { const id = svc.dataset.svc; const i = st.services.indexOf(id); if (i >= 0) st.services.splice(i, 1); else st.services.push(id); svc.setAttribute('aria-pressed', String(i < 0)); refresh(); return; }
     const acc = e.target.closest('[data-acc]');
     if (acc) { const id = acc.dataset.acc; const on = acc.getAttribute('aria-pressed') === 'true'; st.override[id] = !on; refresh(); return; }
+    if (e.target.id === 'previewBtn') { renderWizard(buildConfig(st), {preview:true}); return; }
     if (e.target.id === 'copyLink') { copy($('#linkOut').value); return; }
     if (e.target.id === 'emailLink') {
       const link = $('#linkOut').value;
@@ -647,9 +650,10 @@ function renderAdmin(){
 /* =========================================================================
    CLIENT WIZARD MODE
    ========================================================================= */
-function renderWizard(cfg){
+function renderWizard(cfg, opts){
+  opts = opts || {};
   const agency = cfg.agency || {};
-  const key = 'ev-onb-' + hashOf(JSON.stringify(cfg));
+  const key = (opts.preview ? 'ev-onb-preview-' : 'ev-onb-') + hashOf(JSON.stringify(cfg));
   const saved = store.get(key, {});
   const data = saved.data || { business: { company: cfg.client.name || '', contact: cfg.client.contact || '', email: cfg.client.email || '' }, mod: {} };
   let cur = saved.cur || 0;
@@ -756,6 +760,7 @@ function renderWizard(cfg){
     const done = steps.filter(x => stepStatus(x) === 'done').length;
     const pct = Math.round((done / steps.length) * 100);
     $('#app').innerHTML = `
+    ${opts.preview ? '<div class="previewbar"><span><b>Preview mode.</b> This is what your client will see.</span><span class="spacer"></span><button class="btn sec sm" id="resetPreview" type="button">Reset answers</button><button class="btn pri sm" id="backAdmin" type="button">&larr; Back to admin</button></div>' : ''}
     <div class="grid wiz">
       <div class="side"><div class="panel">
         <div class="plab"><span>Progress</span><span>${pct}%</span></div>
@@ -790,7 +795,7 @@ function renderWizard(cfg){
   }
   function go(i){ if (steps[cur].id === 'business' && i > cur && !validateBusiness()) return; cur = Math.max(0, Math.min(steps.length - 1, i)); render(); }
 
-  const app = $('#app');
+  const app = freshApp();
   app.addEventListener('input', e => {
     const t = e.target; if (t.dataset.k == null) return;
     const s = steps[cur];
@@ -806,6 +811,8 @@ function renderWizard(cfg){
   });
   app.addEventListener('change', e => { const t = e.target; if (t.dataset.k != null && (t.type === 'checkbox' || t.type === 'radio' || t.tagName === 'SELECT')) t.dispatchEvent(new Event('input', {bubbles:true})); });
   app.addEventListener('click', e => {
+    if (e.target.id === 'backAdmin') { renderAdmin(); window.scrollTo({top:0}); return; }
+    if (e.target.id === 'resetPreview') { store.del(key); renderWizard(cfg, opts); return; }
     const g = e.target.closest('[data-go]'); if (g) { go(+g.dataset.go); return; }
     if (e.target.id === 'nextBtn') { go(cur + 1); return; }
     if (e.target.id === 'prevBtn') { go(cur - 1); return; }
