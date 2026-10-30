@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: nvvp
+      POSTGRES_USER: nvvp
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change-me}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Not published to the host network on purpose: the database is never publicly reachable.
+  web:
+    build: .
+    depends_on: [db]
+    env_file: .env
+    environment:
+      DATABASE_URL: pgsql:host=db;port=5432;dbname=nvvp
+    ports:
+      - "8080:80"
+    volumes:
+      - rawdata:/var/www/html/storage/raw
+  scheduler:
+    build: .
+    depends_on: [db]
+    env_file: .env
+    environment:
+      DATABASE_URL: pgsql:host=db;port=5432;dbname=nvvp
+    volumes:
+      - rawdata:/var/www/html/storage/raw
+    # Checks every 15 minutes which ingestion jobs are due (see bin/ingest run-due)
+    command: sh -c "while true; do php bin/ingest run-due; sleep 900; done"
+volumes:
+  pgdata:
+  rawdata:

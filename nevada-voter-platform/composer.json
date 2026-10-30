@@ -1,0 +1,22 @@
+{
+  "name": "envision/nevada-voter-platform",
+  "description": "Nevada-only voter data and field organizing platform (PHP)",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.2",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*",
+    "ext-zip": "*",
+    "ext-curl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*"
+  },
+  "autoload": {
+    "psr-4": { "App\\": "src/" }
+  },
+  "scripts": {
+    "test": "php tests/run.php",
+    "serve": "php -S 0.0.0.0:8080 -t public public/index.php"
+  }
+}

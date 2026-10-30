@@ -1,0 +1,172 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+/**
+ * Administration CLI.
+ *
+ *   bin/nvvp key                                   Print a random APP_KEY
+ *   bin/nvvp setup                                 Create schema, policies and the web app role
+ *   bin/nvvp user:create --email= --name= --password= [--staff] [--org=ID --role=admin]
+ *   bin/nvvp user:reset-mfa --email=
+ *   bin/nvvp org:create --name= --type=candidate_committee [--committee=ID] [--districts=assembly:1,senate:3]
+ *   bin/nvvp org:districts --org=ID --districts=assembly:1,commission:A
+ *   bin/nvvp window:set --code=26G --date=2026-11-03 [--reg-close=2026-10-06 --ev-start=2026-10-17 --ev-end=2026-10-30]
+ *   bin/nvvp retention                              End access for orgs past contract end; archive past retention
+ *   bin/nvvp demo                                   Load a synthetic Clark file and create demo org + users
+ */
+require __DIR__ . '/../src/bootstrap.php';
+
+use App\Core\Config;
+use App\Core\DB;
+use App\Services\Ingest\Pipeline;
+use App\Services\Ingest\SampleGenerator;
+
+$args = array_slice($argv, 1);
+$cmd = array_shift($args) ?? 'help';
+$opts = [];
+foreach ($args as $a) {
+    if (preg_match('/^--([a-z-]+)(?:=(.*))?$/', $a, $m)) {
+        $opts[$m[1]] = $m[2] ?? true;
+    }
+}
+
+function setDistricts(DB $db, int $orgId, string $spec): array
+{
+    $set = [];
+    foreach (array_filter(array_map('trim', explode(',', $spec))) as $pair) {
+        [$type, $name] = array_pad(explode(':', $pair, 2), 2, '');
+        $id = $db->val('SELECT id FROM districts WHERE county = :c AND type = :t AND name = :n', [':c' => 'clark', ':t' => strtolower($type), ':n' => $name]);
+        if (!$id) {
+            $id = $db->insert('districts', ['county' => 'clark', 'type' => strtolower($type), 'name' => $name]);
+        }
+        $db->exec('INSERT INTO org_districts (org_id, district_id) VALUES (:o, :d) ON CONFLICT DO NOTHING', [':o' => $orgId, ':d' => (int) $id]);
+        $set[] = "$type $name";
+    }
+    return $set;
+}
+
+function createUser(DB $db, string $email, string $name, string $password, bool $staff, ?int $orgId, string $role): int
+{
+    $id = (int) $db->insert('users', ['email' => $email, 'name' => $name, 'password_hash' => password_hash($password, PASSWORD_DEFAULT), 'is_staff' => $staff]);
+    if ($orgId) {
+        $db->exec('INSERT INTO memberships (org_id, user_id, role) VALUES (:o, :u, :r)', [':o' => $orgId, ':u' => $id, ':r' => $role]);
+    }
+    return $id;
+}
+
+switch ($cmd) {
+    case 'key':
+        echo bin2hex(random_bytes(32)) . PHP_EOL;
+        break;
+
+    case 'setup':
+        $db = DB::owner();
+        $db->pdo->exec((string) file_get_contents(APP_ROOT . '/db/schema.sql'));
+        $role = Config::get('APP_DB_USER');
+        if ($role) {
+            $pass = Config::get('APP_DB_PASSWORD', '');
+            $exists = $db->val('SELECT 1 FROM pg_roles WHERE rolname = :r', [':r' => $role]);
+            $q = $db->pdo->quote($pass);
+            $db->pdo->exec($exists ? "ALTER ROLE \"$role\" WITH LOGIN PASSWORD $q" : "CREATE ROLE \"$role\" WITH LOGIN PASSWORD $q");
+            $sql = str_replace(':"approle"', '"' . $role . '"', (string) file_get_contents(APP_ROOT . '/db/policies.sql'));
+            $db->pdo->exec($sql);
+            echo "Schema created; policies applied for role $role\n";
+        } else {
+            echo "Schema created. APP_DB_USER is not set, so the web app will use the owner connection and row-level security is NOT enforced by the database. Set APP_DB_USER/APP_DB_PASSWORD for production.\n";
+        }
+        break;
+
+    case 'user:create':
+        $db = DB::owner();
+        $id = createUser($db, (string) $opts['email'], (string) ($opts['name'] ?? $opts['email']), (string) $opts['password'], isset($opts['staff']), isset($opts['org']) ? (int) $opts['org'] : null, (string) ($opts['role'] ?? 'admin'));
+        echo "User #$id created. They must enroll MFA at first login.\n";
+        break;
+
+    case 'user:reset-mfa':
+        $db = DB::owner();
+        $db->exec('UPDATE users SET totp_secret_enc = NULL, mfa_enabled = false WHERE email = :e', [':e' => (string) $opts['email']]);
+        $db->exec('UPDATE sessions SET revoked_at = now() WHERE user_id = (SELECT id FROM users WHERE email = :e) AND revoked_at IS NULL', [':e' => (string) $opts['email']]);
+        echo "MFA reset and sessions revoked.\n";
+        break;
+
+    case 'org:create':
+        $db = DB::owner();
+        $id = (int) $db->insert('orgs', ['name' => (string) $opts['name'], 'type' => (string) ($opts['type'] ?? 'candidate_committee'), 'committee_id' => $opts['committee'] ?? null,
+            'contract_start' => $opts['start'] ?? date('Y-m-d'), 'contract_end' => $opts['end'] ?? null]);
+        $set = isset($opts['districts']) ? setDistricts($db, $id, (string) $opts['districts']) : [];
+        echo "Org #$id created. Licensed districts: " . (implode(', ', $set) ?: 'none yet') . "\n";
+        break;
+
+    case 'org:districts':
+        echo implode(', ', setDistricts(DB::owner(), (int) $opts['org'], (string) $opts['districts'])) . PHP_EOL;
+        break;
+
+    case 'window:set':
+        $db = DB::owner();
+        $db->exec('UPDATE election_windows SET is_current = false');
+        $code = \App\Services\Ingest\Elections::normalize((string) $opts['code']);
+        \App\Services\Ingest\Elections::ensure($db, $code);
+        $db->insert('election_windows', ['name' => $opts['name'] ?? $code, 'election_code' => $code, 'election_date' => (string) $opts['date'], 'registration_close' => $opts['reg-close'] ?? null,
+            'early_vote_start' => $opts['ev-start'] ?? null, 'early_vote_end' => $opts['ev-end'] ?? null, 'is_current' => true]);
+        \App\Services\Ingest\Enricher::deriveCurrentFlags($db);
+        echo "Current election window set to $code\n";
+        break;
+
+    case 'retention':
+        $db = DB::owner();
+        $ended = $db->exec("UPDATE orgs SET status = 'ended', data_retention_until = COALESCE(data_retention_until, contract_end + interval '90 days') WHERE status = 'active' AND contract_end IS NOT NULL AND contract_end < current_date");
+        $db->exec("UPDATE sessions s SET revoked_at = now() FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE s.user_id = m.user_id AND o.status <> 'active' AND s.revoked_at IS NULL
+                   AND NOT EXISTS (SELECT 1 FROM memberships m2 JOIN orgs o2 ON o2.id = m2.org_id WHERE m2.user_id = s.user_id AND o2.status = 'active')");
+        $archived = 0;
+        foreach ($db->all("SELECT id, name FROM orgs WHERE status = 'ended' AND data_retention_until IS NOT NULL AND data_retention_until < current_date") as $o) {
+            // Delete the organization's campaign data on schedule; the shared voter file is untouched.
+            $db->tx(function (DB $db) use ($o) {
+                foreach (['survey_responses', 'contact_attempts', 'turf_households', 'turfs', 'list_members', 'lists', 'voter_tags', 'notes', 'scripts', 'survey_questions', 'exports'] as $t) {
+                    $db->exec("DELETE FROM $t WHERE org_id = :o", [':o' => (int) $o['id']]);
+                }
+                $db->exec("UPDATE orgs SET status = 'archived' WHERE id = :o", [':o' => (int) $o['id']]);
+                \App\Core\Audit::log('org.archived', ['org' => $o['name']], (int) $o['id'], null, $db);
+            });
+            $archived++;
+        }
+        echo "Ended: $ended, archived: $archived\n";
+        break;
+
+    case 'demo':
+        $db = DB::owner();
+        $rows = (int) ($opts['rows'] ?? 6000);
+        $file = APP_ROOT . '/storage/tmp/demo_COUNTY_all_TV.zip';
+        SampleGenerator::write($file, $rows, 42);
+        $r = (new Pipeline($db))->run('clark-voters', $file, true);
+        echo "Ingest: {$r['status']} (run #{$r['run_id']})\n";
+        // Fake coordinates around Las Vegas so maps and turf cutting work without the geocoder.
+        $db->exec("UPDATE households SET lat = 36.17 + (hashtext(address_key) % 10000) / 100000.0 * 1.6 - 0.08, lng = -115.14 + (hashtext(address_key || 'x') % 10000) / 100000.0 * 2.2 - 0.11 WHERE lat IS NULL");
+        $db->exec("UPDATE voters v SET lat = h.lat, lng = h.lng, geocode_quality = 'demo' FROM households h WHERE h.id = v.household_id AND v.lat IS NULL");
+        $db->exec('UPDATE election_windows SET is_current = false');
+        \App\Services\Ingest\Elections::ensure($db, '26G');
+        $db->insert('election_windows', ['name' => '2026 General', 'election_code' => '26G', 'election_date' => '2026-11-03', 'registration_close' => '2026-10-06', 'early_vote_start' => '2026-10-17', 'early_vote_end' => '2026-10-30', 'is_current' => true]);
+        SampleGenerator::writeBallotFiles(APP_ROOT . '/storage/tmp/demo_mail.csv', APP_ROOT . '/storage/tmp/demo_ev.csv', $rows);
+        (new \App\Services\Ingest\BallotFiles($db))->run('clark-mail', APP_ROOT . '/storage/tmp/demo_mail.csv', true);
+        (new \App\Services\Ingest\BallotFiles($db))->run('clark-ev', APP_ROOT . '/storage/tmp/demo_ev.csv', true);
+        $orgId = (int) $db->insert('orgs', ['name' => 'Demo Campaign for Assembly 1', 'type' => 'candidate_committee', 'committee_id' => 'C-DEMO-001', 'use_attestation_at' => date('c'), 'attested_by' => 'Demo Treasurer', 'contract_start' => date('Y-m-d'), 'contract_end' => '2026-12-31']);
+        setDistricts($db, $orgId, 'assembly:1');
+        $org2 = (int) $db->insert('orgs', ['name' => 'Other Campaign (Senate 2)', 'type' => 'pac', 'committee_id' => 'C-DEMO-002', 'use_attestation_at' => date('c'), 'attested_by' => 'Demo Chair', 'contract_start' => date('Y-m-d'), 'contract_end' => '2026-12-31']);
+        setDistricts($db, $org2, 'senate:2');
+        $pw = (string) ($opts['password'] ?? 'demo-pass-1234');
+        createUser($db, 'staff@example.org', 'Envision Staff', $pw, true, null, 'admin');
+        createUser($db, 'admin@demo.org', 'Demo Admin', $pw, false, $orgId, 'admin');
+        createUser($db, 'organizer@demo.org', 'Demo Organizer', $pw, false, $orgId, 'organizer');
+        createUser($db, 'volunteer@demo.org', 'Demo Volunteer', $pw, false, $orgId, 'volunteer');
+        createUser($db, 'other@demo.org', 'Other Campaign Admin', $pw, false, $org2, 'admin');
+        $db->insert('scripts', ['org_id' => $orgId, 'name' => 'Door script', 'channel' => 'door', 'is_default' => true, 'body' => "Hi, my name is [NAME] and I'm a volunteer with the campaign. We're talking with neighbors about the November election.\n\nCan I ask you a couple of quick questions?"]);
+        $db->insert('scripts', ['org_id' => $orgId, 'name' => 'Phone script', 'channel' => 'phone', 'body' => "Hi, is this [VOTER NAME]? My name is [NAME], a volunteer with the campaign. Do you have a minute to talk about the election?"]);
+        $db->insert('survey_questions', ['org_id' => $orgId, 'question' => 'Support for our candidate (1 strong support to 5 strong oppose)', 'qtype' => 'scale', 'options' => json_encode(['1', '2', '3', '4', '5']), 'sort_order' => 1]);
+        $db->insert('survey_questions', ['org_id' => $orgId, 'question' => 'Most important issue', 'qtype' => 'choice', 'options' => json_encode(['Housing costs', 'Schools', 'Public safety', 'Water', 'Jobs', 'Other']), 'sort_order' => 2]);
+        $db->insert('survey_questions', ['org_id' => $orgId, 'question' => 'Willing to volunteer?', 'qtype' => 'yesno', 'options' => json_encode(['Yes', 'No']), 'sort_order' => 3]);
+        echo "Demo ready. Users (password: $pw): staff@example.org (staff), admin@demo.org, organizer@demo.org, volunteer@demo.org, other@demo.org\n";
+        break;
+
+    default:
+        $src = (string) file_get_contents(__FILE__);
+        echo substr($src, strpos($src, '/**'), strpos($src, '*/') - strpos($src, '/**') + 2) . PHP_EOL;
+}

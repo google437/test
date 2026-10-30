@@ -1,0 +1,104 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+/**
+ * Ingestion worker CLI. Every scheduled job is also runnable by hand.
+ *
+ *   bin/ingest clark-voters [--file=path] [--force]     Clark County "All" voter file (full snapshot)
+ *   bin/ingest clark-active [--file=path] [--force]     Clark County "Active" file (no removals)
+ *   bin/ingest clark-inactive|clark-canceled [--file=]  Inactivated / canceled voter files
+ *   bin/ingest clark-mail [--file=path]                 Mail ballot return file
+ *   bin/ingest clark-ev [--file=path]                   Early vote return file
+ *   bin/ingest sos-upload --file=path [--county=clark]  NV SOS statewide list (manual upload)
+ *   bin/ingest run-due                                  Run whatever the schedule says is due (cron every 15 min)
+ *   bin/ingest schedule                                 Print the schedule and what is due now
+ *   bin/ingest approve --run=ID | reject --run=ID       Act on a held run
+ *   bin/ingest rerun --run=ID                           Rebuild from an archived raw file
+ *   bin/ingest enrich                                   Rebuild households and derived fields
+ *   bin/ingest geocode [--limit=10000] [--retry]        Census batch geocoding of households
+ *   bin/ingest sample --out=path [--rows=5000] [--mutate] [--seed=42]   Synthetic Clark-format file
+ *   bin/ingest sample-ballots --out-dir=path [--rows=5000] [--code=26G]
+ *   bin/ingest runs [--limit=20]                        Recent import runs
+ */
+require __DIR__ . '/../src/bootstrap.php';
+
+use App\Core\DB;
+use App\Services\Geocoder;
+use App\Services\Ingest\BallotFiles;
+use App\Services\Ingest\Enricher;
+use App\Services\Ingest\Pipeline;
+use App\Services\Ingest\SampleGenerator;
+use App\Services\Ingest\Scheduler;
+use App\Services\Ingest\SosParser;
+use App\Services\Ingest\StatusFiles;
+
+$args = array_slice($argv, 1);
+$cmd = array_shift($args) ?? 'help';
+$opts = [];
+foreach ($args as $a) {
+    if (preg_match('/^--([a-z-]+)(?:=(.*))?$/', $a, $m)) {
+        $opts[$m[1]] = $m[2] ?? true;
+    }
+}
+$out = fn(array $r) => print(json_encode($r, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+$db = DB::owner();
+
+switch ($cmd) {
+    case 'clark-voters':
+    case 'clark-active':
+        $out((new Pipeline($db))->run($cmd, $opts['file'] ?? null, isset($opts['force'])));
+        break;
+    case 'clark-inactive':
+    case 'clark-canceled':
+        $out((new StatusFiles($db))->run($cmd, $opts['file'] ?? null, isset($opts['force'])));
+        break;
+    case 'clark-mail':
+    case 'clark-ev':
+        $out((new BallotFiles($db))->run($cmd, $opts['file'] ?? null, isset($opts['force'])));
+        break;
+    case 'sos-upload':
+        $out((new SosParser($db))->run((string) ($opts['file'] ?? ''), (string) ($opts['county'] ?? '')));
+        break;
+    case 'run-due':
+        $out((new Scheduler($db))->runDue());
+        break;
+    case 'schedule':
+        echo "clark-voters     daily 06:00 PT\nclark-inactive   daily 06:15 PT (if CLARK_INACTIVE_URL)\nclark-canceled   daily 06:15 PT (if CLARK_CANCELED_URL)\n";
+        echo "clark-mail       weekly; every 4h inside the current election window (if CLARK_MAIL_URL)\nclark-ev         every 2h during early voting (if CLARK_EV_URL)\nsos-statewide    monthly reminder, manual upload\n\n";
+        echo "Cron line:  */15 * * * *  cd " . APP_ROOT . " && php bin/ingest run-due >> storage/logs/cron.log 2>&1\n\n";
+        $out(['due_now' => (new Scheduler($db))->due()]);
+        break;
+    case 'approve':
+        $out((new Pipeline($db))->approve((int) ($opts['run'] ?? 0), 0));
+        break;
+    case 'reject':
+        (new Pipeline($db))->reject((int) ($opts['run'] ?? 0), 0);
+        $out(['status' => 'rejected']);
+        break;
+    case 'rerun':
+        $out((new Pipeline($db))->rerun((int) ($opts['run'] ?? 0)));
+        break;
+    case 'enrich':
+        $out(Enricher::run($db));
+        break;
+    case 'geocode':
+        $out(Geocoder::run($db, (int) ($opts['limit'] ?? 10000), isset($opts['retry'])));
+        break;
+    case 'sample':
+        $path = (string) ($opts['out'] ?? APP_ROOT . '/storage/tmp/sample_all_TV.zip');
+        $n = SampleGenerator::write($path, (int) ($opts['rows'] ?? 5000), (int) ($opts['seed'] ?? 42), isset($opts['mutate']));
+        $out(['file' => $path, 'rows' => $n]);
+        break;
+    case 'sample-ballots':
+        $dir = rtrim((string) ($opts['out-dir'] ?? APP_ROOT . '/storage/tmp'), '/');
+        SampleGenerator::writeBallotFiles("$dir/sample_mail.csv", "$dir/sample_ev.csv", (int) ($opts['rows'] ?? 5000), (string) ($opts['code'] ?? '26G'));
+        $out(['mail' => "$dir/sample_mail.csv", 'ev' => "$dir/sample_ev.csv"]);
+        break;
+    case 'runs':
+        foreach ($db->all('SELECT id, source, status, rows_total, rows_new, rows_changed, rows_removed, rows_error, hold_reason, started_at, duration_ms FROM import_runs ORDER BY id DESC LIMIT :l', [':l' => (int) ($opts['limit'] ?? 20)]) as $r) {
+            printf("#%-5d %-15s %-10s rows=%-8s new=%-7s chg=%-7s rm=%-6s err=%-5s %s %s\n", $r['id'], $r['source'], $r['status'], $r['rows_total'] ?? '-', $r['rows_new'] ?? '-', $r['rows_changed'] ?? '-', $r['rows_removed'] ?? '-', $r['rows_error'] ?? '-', substr((string) $r['started_at'], 0, 16), $r['hold_reason'] ?? '');
+        }
+        break;
+    default:
+        echo substr((string) file_get_contents(__FILE__), strpos((string) file_get_contents(__FILE__), '/**'), strpos((string) file_get_contents(__FILE__), '*/') - strpos((string) file_get_contents(__FILE__), '/**') + 2) . PHP_EOL;
+}
