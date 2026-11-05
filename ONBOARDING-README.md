@@ -36,3 +36,20 @@ Everything is data at the top of the `<script>` block:
 - `AGENCY_FIELDS` are the agency-side values asked for in admin setup.
 - `BUSINESS_FIELDS` is the business basics form.
 - `LOGO_URL` at the very top: set it to a hosted logo URL to replace the text wordmark.
+
+## Duda version
+
+`duda-onboarding-wizard.html` is the paste-ready block for a Duda HTML widget, like the calculator embed.
+
+1. Create a new page in Duda (for example `/onboarding`). Hide it from the navigation and turn off search engine indexing in the page's SEO settings.
+2. Add a widget: Developer Tools > HTML. Open the HTML editor and paste the entire contents of `duda-onboarding-wizard.html`.
+3. Publish, then open the live page with `#admin` on the end (for example `yoursite.com/onboarding#admin`). Bookmark that for the team.
+4. Fill in the agency details once, set up a client, and copy or email the generated link.
+
+Visitors who land on the page without a link see a short "use the link we emailed you" message. The `#admin` view is hidden, not password protected. It only holds IDs the clients see anyway.
+
+Scripts in HTML widgets usually only run in Duda's preview or on the published page, not inside the editor canvas.
+
+If your site has a taller sticky header, change `--evo-sticky-top` (default `100px`) on `.evo` so the wizard sidebar sits below it.
+
+**Keeping it in sync:** edit `onboarding-wizard.html`, then run `python3 build-duda-onboarding.py` to regenerate the Duda version.
