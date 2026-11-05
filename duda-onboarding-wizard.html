@@ -197,6 +197,9 @@
 /* Set this to your hosted logo URL (PNG or SVG). Leave empty to show the text wordmark. */
 const LOGO_URL = '';
 
+/* Every client submission is emailed here. */
+const SUBMIT_TO = 'team@envisionmktg.com';
+
 /* =========================================================================
    DATA: services the agency sells, and the access modules each one needs
    ========================================================================= */
@@ -225,7 +228,7 @@ const SERVICES = [
 /* Agency-side values the client needs to see inside the instructions. */
 const AGENCY_FIELDS = [
   {key:'name',     label:'Agency name',                                   ph:'Envision Marketing', def:'Envision Marketing'},
-  {key:'email',    label:'Send completed onboardings to',                 ph:'onboarding@yourdomain.com', type:'email'},
+  {key:'email',    label:'Send completed onboardings to',                 ph:'team@envisionmktg.com', type:'email', def:'team@envisionmktg.com'},
   {key:'gEmail',   label:'Google access email (Analytics, Search Console, Business Profile, Tag Manager, YouTube)', ph:'analytics@yourdomain.com'},
   {key:'adsEmail', label:'Team email for other ad platform invites (Microsoft, Snapchat, Reddit, Apple)', ph:'ads@yourdomain.com'},
   {key:'mcc',      label:'Google Ads manager account (MCC) ID',           ph:'123-456-7890'},
@@ -662,6 +665,8 @@ function renderWizard(cfg, opts){
   const data = saved.data || { business: { company: cfg.client.name || '', contact: cfg.client.contact || '', email: cfg.client.email || '' }, mod: {} };
   let cur = saved.cur || 0;
   let submitted = saved.submitted || false;
+  let submitMsg = '';
+  const sendTo = (agency.email || SUBMIT_TO).trim();
 
   $('#modePill').textContent = (agency.name || 'Agency') + ' onboarding';
   $('#title').textContent = `Welcome${cfg.client.contact ? ', ' + cfg.client.contact : ''}!`;
@@ -724,7 +729,8 @@ function renderWizard(cfg, opts){
           <button class="btn sec" id="copySummary" type="button">Copy summary</button>
           <button class="btn sec" id="downloadJson" type="button">Download JSON</button>
         </div>
-        <div id="submitStatus" class="muted" style="margin-top:10px"></div>
+        <div id="submitStatus" class="muted" style="margin-top:10px">${esc(submitMsg)}</div>
+        ${submitted ? '' : `<p class="muted" style="margin-top:8px">Your answers go to <b>${esc(sendTo)}</b>.</p>`}
         <details class="adv" style="margin-top:16px"><summary>See what will be sent</summary><textarea class="summary" id="summaryBox" readonly>${esc(summaryText())}</textarea></details>
       </div>`;
     }
@@ -830,20 +836,31 @@ function renderWizard(cfg, opts){
 
   async function submit(){
     const btn = $('#submitBtn'); const status = $('#submitStatus');
-    btn.disabled = true; status.textContent = 'Sending...';
+    const say = m => { submitMsg = m; status.textContent = m; };
+    btn.disabled = true; say('Sending...');
     const payload = summaryObj(); let sent = false;
     if (agency.webhook) {
       try { const r = await fetch(agency.webhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); sent = r.ok; }
       catch (err) { try { await fetch(agency.webhook, {method:'POST', mode:'no-cors', body: JSON.stringify(payload)}); sent = true; } catch (e2) { sent = false; } }
+      if (sent) say('Sent. Thank you!');
     }
-    if (!sent && agency.email) {
+    if (!sent && sendTo) {
       const subj = `Onboarding submitted: ${cfg.client.name || data.business.company || ''}`;
       const body = summaryText();
-      const url = `mailto:${encodeURIComponent(agency.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
-      if (url.length < 1900) { location.href = url; sent = true; status.textContent = 'Your email app should open with the summary. Press send to finish.'; }
-      else { copy(body); status.textContent = `The summary is copied to your clipboard. Please paste it into an email to ${agency.email}.`; sent = true; }
-    } else if (sent) { status.textContent = 'Sent. Thank you!'; }
-    if (!sent) { status.textContent = 'Could not send automatically. Use "Copy summary" and email it to us.'; }
+      const mail = b => `mailto:${encodeURIComponent(sendTo)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(b)}`;
+      const url = mail(body);
+      if (url.length < 1900) {
+        location.href = url;
+        say(`Your email app should open with your answers addressed to ${sendTo}. Press send to finish.`);
+      } else {
+        /* Too long for some email apps: copy the full summary, open a short email to paste into. */
+        const open = () => { location.href = mail('Please paste the copied onboarding summary here (Ctrl+V or Cmd+V).\n\n'); };
+        if (navigator.clipboard) navigator.clipboard.writeText(body).then(open, open); else { copy(body); open(); }
+        say(`Your answers are copied to your clipboard and an email to ${sendTo} should open. Paste them in and press send.`);
+      }
+      sent = true;
+    }
+    if (!sent) say(`Could not send automatically. Use "Copy summary" and email it to ${sendTo || 'us'}.`);
     submitted = sent; btn.disabled = false; save(); if (sent) render();
   }
 

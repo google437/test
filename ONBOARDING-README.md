@@ -17,7 +17,8 @@
    - One step per platform with numbered, click-by-click instructions that show our IDs and emails as copy buttons, plus the fields we need back (Customer ID, Property ID, ad account ID, etc.).
    - Each step has a "done" checkbox and a blockers box, so the client can keep going even if they are stuck on one.
    - Progress is saved in their browser automatically, so they can come back later.
-   - Review and submit: posts the answers to the webhook if one is set, otherwise opens an email to the agency with the summary. "Copy summary" and "Download JSON" are always available.
+   - Review and submit: posts the answers to the webhook if one is set, otherwise opens an email to team@envisionmktg.com with the summary. Long summaries are copied to the clipboard and a short email opens for the client to paste into. "Copy summary" and "Download JSON" are always available.
+   - The recipient is set by `SUBMIT_TO` at the top of the script, and the admin "Send completed onboardings to" field can override it per link.
 
 ## Hosting
 
