@@ -198,6 +198,10 @@ const LOGO_URL = '';
 /* Every client submission is emailed here. */
 const SUBMIT_TO = 'team@envisionmktg.com';
 
+/* Google Apps Script web app that emails each submission automatically (see onboarding-email-script.gs).
+   Paste the deployment's /exec URL here. Empty = the client's email app opens instead. */
+const SUBMIT_WEBHOOK = '';
+
 /* =========================================================================
    DATA: services the agency sells, and the access modules each one needs
    ========================================================================= */
@@ -235,7 +239,7 @@ const AGENCY_FIELDS = [
   {key:'pinId',    label:'Pinterest business ID',                         ph:'123456789012'},
   {key:'liName',   label:'LinkedIn admin (name as it appears on LinkedIn)', ph:'Jane Doe'},
   {key:'xHandle',  label:'X / Twitter handle for ad account access',      ph:'@yourhandle'},
-  {key:'webhook',  label:'Webhook URL for submissions (optional: Zapier / Make catch hook)', ph:'https://hooks.zapier.com/hooks/catch/...', type:'url'},
+  {key:'webhook',  label:'Submission URL override (optional: leave blank to use the built-in Google Script)', ph:'https://script.google.com/macros/s/.../exec', type:'url'},
 ];
 
 /* Access modules. {{key}} placeholders are filled from the agency values above. */
@@ -834,11 +838,21 @@ function renderWizard(cfg, opts){
     const btn = $('#submitBtn'); const status = $('#submitStatus');
     const say = m => { submitMsg = m; status.textContent = m; };
     btn.disabled = true; say('Sending...');
-    const payload = summaryObj(); let sent = false;
-    if (agency.webhook) {
-      try { const r = await fetch(agency.webhook, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); sent = r.ok; }
-      catch (err) { try { await fetch(agency.webhook, {method:'POST', mode:'no-cors', body: JSON.stringify(payload)}); sent = true; } catch (e2) { sent = false; } }
-      if (sent) say('Sent. Thank you!');
+    const payload = Object.assign({ source: 'envision-onboarding', summaryText: summaryText() }, summaryObj());
+    const endpoint = (agency.webhook || SUBMIT_WEBHOOK || '').trim();
+    let sent = false;
+    if (endpoint) {
+      /* Plain-text body, no custom headers: a "simple" request, so Google Apps Script accepts it without a CORS preflight. */
+      const body = JSON.stringify(payload);
+      try {
+        const r = await fetch(endpoint, { method:'POST', body });
+        let res = null; try { res = await r.json(); } catch (e) {}
+        sent = r.ok && !(res && res.ok === false);
+      } catch (err) {
+        /* No retry: the post may already have been delivered, and a second one would send a duplicate email. */
+        sent = false;
+      }
+      if (sent) say(`Sent to ${agency.name || 'our team'}. Thank you! We will review everything and follow up on anything still open.`);
     }
     if (!sent && sendTo) {
       const subj = `Onboarding submitted: ${cfg.client.name || data.business.company || ''}`;

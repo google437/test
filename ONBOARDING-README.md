@@ -24,9 +24,20 @@
 
 Upload the file anywhere static (Duda, Netlify, S3, the existing site). The client link is built from the page's own URL, so wherever the admin opens the file is where the client links will point.
 
-## Getting submissions automatically
+## Getting submissions automatically (Google Apps Script)
 
-Paste a Zapier or Make "catch hook" URL into the Webhook field in admin setup. The wizard POSTs a JSON body with `client`, `services`, `business`, and an `access` array (one entry per platform step with the fields the client filled in, a `done` flag and any `blocker` text). From there it can go to Asana, Slack, Gmail or a sheet.
+`onboarding-email-script.gs` is a small Google Apps Script web app. When a client submits, the wizard posts their answers to it and it emails a formatted summary to team@envisionmktg.com, with Reply-To set to the client. The recipient is fixed inside the script, so the public URL can't be used to email anyone else.
+
+1. Go to script.google.com while signed in to the Google account that should send the emails. Click **New project** and name it "Envision Onboarding".
+2. Delete the sample code in `Code.gs`, paste in all of `onboarding-email-script.gs`, and save.
+3. Click **Deploy > New deployment**. Pick type **Web app**. Set **Execute as: Me** and **Who has access: Anyone**. Click **Deploy**.
+4. Approve the permissions when asked. Google may warn that the app is unverified: click **Advanced**, then **Go to Envision Onboarding**, then **Allow**.
+5. Copy the **Web app URL** that ends in `/exec`. Opening it in a browser should show `{"ok":true,...}`.
+6. Put that URL in `SUBMIT_WEBHOOK` at the top of the script in `onboarding-wizard.html`, then run `python3 build-duda-onboarding.py` and re-paste the Duda code. For a quick test without editing code, paste it into the "Submission URL override" field in admin setup. It is then built into every link made from that browser.
+
+If the script can't be reached, the wizard falls back to opening the client's email app addressed to team@envisionmktg.com.
+
+To change the script later, edit it, then use **Deploy > Manage deployments > Edit > New version**. That keeps the same URL. Google limits sending to about 100 emails a day on a personal Gmail account and about 1,500 on Google Workspace.
 
 ## Customising
 
